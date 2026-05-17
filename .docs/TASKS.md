@@ -100,10 +100,10 @@ Status legend: `[ ]` To Do · `[~]` In Progress · `[x]` Done
 
 ## Phase 8 — XP & Rank-Up Flow
 
-- [ ] 8.1 Increment XP peg UI (tap peg to fill)
-- [ ] 8.2 Trigger rank-up dialog when `currentRank` increases:
-  - [ ] 8.2a Option A: increase a Max Stat (+1)
-  - [ ] 8.2b Option B: choose a new Skill from the Class Skill Tree
+- [x] 8.1 Increment XP peg UI (tap peg to fill)
+- [x] 8.2 Trigger rank-up dialog when `currentRank` increases:
+  - [x] 8.2a Option A: increase a Max Stat (+1)
+  - [x] 8.2b Option B: choose a new Skill from the Class Skill Tree
 
 ---
 
