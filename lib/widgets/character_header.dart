@@ -4,6 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import 'xp_tracker.dart';
 
+// Stat colours matched to game card face colours.
+const _kHealthColor = Color(0xFFEF5350);
+const _kMagicColor = Color(0xFF5C6BC0);
+const _kSkillColor = Color(0xFF66BB6A);
+const _kActionColor = Color(0xFFFF7043);
+
 class CharacterHeader extends ConsumerWidget {
   final String adventurerId;
 
@@ -51,9 +57,9 @@ class CharacterHeader extends ConsumerWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: XPTracker(adventurerId: adventurerId)),
+            _StatPegs(adventurerId: adventurerId),
             const SizedBox(width: 16),
-            _StatReference(adventurerId: adventurerId),
+            Expanded(child: XPTracker(adventurerId: adventurerId)),
           ],
         ),
       ],
@@ -61,10 +67,10 @@ class CharacterHeader extends ConsumerWidget {
   }
 }
 
-class _StatReference extends ConsumerWidget {
+class _StatPegs extends ConsumerWidget {
   final String adventurerId;
 
-  const _StatReference({required this.adventurerId});
+  const _StatPegs({required this.adventurerId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,18 +79,20 @@ class _StatReference extends ConsumerWidget {
           color:
               Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         );
-    final valueStyle = Theme.of(context).textTheme.bodySmall;
 
-    Widget row(String name, int start, int potential) => Padding(
-          padding: const EdgeInsets.only(bottom: 2),
+    Widget statRow(String label, int starting, int potential, Color color) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 24,
-                child: Text(name, style: labelStyle),
+                width: 22,
+                child: Text(label, style: labelStyle),
               ),
-              Text('$start → $potential', style: valueStyle),
+              for (int i = 0; i < starting; i++) _Peg(filled: true, color: color),
+              for (int i = starting; i < potential; i++)
+                _Peg(filled: false, color: color),
             ],
           ),
         );
@@ -92,11 +100,37 @@ class _StatReference extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        row('H', a.health.starting, a.health.potential),
-        row('M', a.magic.starting, a.magic.potential),
-        row('Sk', a.skill.starting, a.skill.potential),
-        row('Ac', a.action.starting, a.action.potential),
+        statRow('H', a.health.starting, a.health.potential, _kHealthColor),
+        statRow('M', a.magic.starting, a.magic.potential, _kMagicColor),
+        statRow('Sk', a.skill.starting, a.skill.potential, _kSkillColor),
+        statRow('Ac', a.action.starting, a.action.potential, _kActionColor),
       ],
+    );
+  }
+}
+
+class _Peg extends StatelessWidget {
+  final bool filled;
+  final Color color;
+
+  const _Peg({required this.filled, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: Container(
+        width: 14,
+        height: 14,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: filled ? color : Colors.transparent,
+          border: Border.all(
+            color: filled ? color : Colors.white.withValues(alpha: 0.4),
+            width: 1.5,
+          ),
+        ),
+      ),
     );
   }
 }
