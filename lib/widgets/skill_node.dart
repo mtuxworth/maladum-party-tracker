@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/skill.dart';
 
+IconData skillCategoryIcon(String category) => switch (category) {
+      'Agility' => Icons.directions_run,
+      'Cunning' => Icons.psychology,
+      'Endurance' => Icons.shield,
+      'Magic' => Icons.auto_fix_high,
+      'Melee' => Icons.gavel,
+      'Ranged' => Icons.adjust,
+      'Stealth' => Icons.visibility_off,
+      'Support' => Icons.favorite,
+      'Survival' => Icons.terrain,
+      _ => Icons.star_outline,
+    };
+
 class SkillNode extends StatelessWidget {
   final Skill skill;
   final bool isOwned;
@@ -27,7 +40,9 @@ class SkillNode extends StatelessWidget {
 
     return ListTile(
       leading: Icon(
-        isOwned ? Icons.auto_awesome : Icons.lock_outline,
+        isOwned
+            ? skillCategoryIcon(skill.category)
+            : Icons.lock_outline,
         color: isOwned
             ? Theme.of(context).colorScheme.primary
             : Colors.grey,

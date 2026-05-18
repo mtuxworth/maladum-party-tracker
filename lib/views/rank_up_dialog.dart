@@ -6,6 +6,7 @@ import '../models/enums.dart';
 import '../models/skill.dart';
 import '../models/skill_data.dart';
 import '../providers/providers.dart';
+import '../widgets/skill_node.dart';
 
 void showRankUpDialog(
   BuildContext context,
@@ -113,6 +114,7 @@ class _RankUpDialog extends ConsumerWidget {
               ...availableSkills.map(
                 (skill) => _SkillRewardTile(
                   skill: skill,
+                  icon: skillCategoryIcon(skill.category),
                   onTap: () {
                     notifier.unlockSkill(skill.id);
                     Navigator.pop(context);
@@ -167,15 +169,20 @@ class _RewardTile extends StatelessWidget {
 
 class _SkillRewardTile extends StatelessWidget {
   final Skill skill;
+  final IconData icon;
   final VoidCallback onTap;
 
-  const _SkillRewardTile({required this.skill, required this.onTap});
+  const _SkillRewardTile({
+    required this.skill,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
-      leading: const Icon(Icons.auto_awesome, size: 20),
+      leading: Icon(icon, size: 20),
       title: Text(skill.name),
       subtitle: Text(
         skill.description,
