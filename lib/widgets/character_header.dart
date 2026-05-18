@@ -6,9 +6,9 @@ import 'xp_tracker.dart';
 
 // Stat colours matched to game card face colours.
 const _kHealthColor = Color(0xFFEF5350);
-const _kMagicColor = Color(0xFF5C6BC0);
-const _kSkillColor = Color(0xFF66BB6A);
-const _kActionColor = Color(0xFFFF7043);
+const _kSkillColor = Color(0xFF9C27B0);
+const _kMagicColor = Color(0xFF00897B);
+const _kActionColor = Color(0xFF1E88E5);
 
 class CharacterHeader extends ConsumerWidget {
   final String adventurerId;
@@ -75,19 +75,19 @@ class _StatPegs extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final a = ref.watch(adventurerProvider(adventurerId));
-    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
           color:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         );
 
     Widget statRow(String label, int starting, int potential, Color color) =>
         Padding(
-          padding: const EdgeInsets.only(bottom: 5),
+          padding: const EdgeInsets.only(bottom: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 22,
+                width: 56,
                 child: Text(label, style: labelStyle),
               ),
               for (int i = 0; i < starting; i++) _Peg(filled: true, color: color),
@@ -100,10 +100,10 @@ class _StatPegs extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        statRow('H', a.health.starting, a.health.potential, _kHealthColor),
-        statRow('M', a.magic.starting, a.magic.potential, _kMagicColor),
-        statRow('Sk', a.skill.starting, a.skill.potential, _kSkillColor),
-        statRow('Ac', a.action.starting, a.action.potential, _kActionColor),
+        statRow('Health', a.health.starting, a.health.potential, _kHealthColor),
+        statRow('Skill', a.skill.starting, a.skill.potential, _kSkillColor),
+        statRow('Magic', a.magic.starting, a.magic.potential, _kMagicColor),
+        statRow('Action', a.action.starting, a.action.potential, _kActionColor),
       ],
     );
   }

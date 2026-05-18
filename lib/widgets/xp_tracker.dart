@@ -62,7 +62,7 @@ class _XPPeg extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    const color = Color(0xFFFFB300);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
