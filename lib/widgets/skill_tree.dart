@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/character_classes.dart';
 import '../models/skill_data.dart';
 import '../providers/providers.dart';
 import 'skill_node.dart';
@@ -15,8 +16,12 @@ class SkillTree extends ConsumerWidget {
     final adventurer = ref.watch(adventurerProvider(adventurerId));
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
+    final charClass = kAllClasses
+        .where((c) => c.id == adventurer.characterClass)
+        .firstOrNull;
+    final categories = charClass?.skillCategories ?? [];
     final classSkills = kAllSkills
-        .where((s) => s.characterClass == adventurer.characterClass)
+        .where((s) => categories.contains(s.category))
         .toList();
 
     return ExpansionTile(

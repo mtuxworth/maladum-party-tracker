@@ -15,6 +15,7 @@ Adventurer _makeAdventurer({int xpPegs = 0}) => Adventurer(
     );
 
 void main() {
+  // Default rankXpCosts = [3, 4, 4, 5, 5]; cumulative: 3, 7, 11, 16, 21.
   group('Adventurer.currentRank', () {
     test('rank 0 below first threshold', () {
       expect(_makeAdventurer(xpPegs: 0).currentRank, equals(0));
@@ -28,26 +29,22 @@ void main() {
 
     test('rank 2 at peg 7', () {
       expect(_makeAdventurer(xpPegs: 7).currentRank, equals(2));
-      expect(_makeAdventurer(xpPegs: 9).currentRank, equals(2));
+      expect(_makeAdventurer(xpPegs: 10).currentRank, equals(2));
     });
 
-    test('rank 3 at peg 10', () {
-      expect(_makeAdventurer(xpPegs: 10).currentRank, equals(3));
-      expect(_makeAdventurer(xpPegs: 13).currentRank, equals(3));
+    test('rank 3 at peg 11', () {
+      expect(_makeAdventurer(xpPegs: 11).currentRank, equals(3));
+      expect(_makeAdventurer(xpPegs: 15).currentRank, equals(3));
     });
 
-    test('rank 4 at peg 14', () {
-      expect(_makeAdventurer(xpPegs: 14).currentRank, equals(4));
+    test('rank 4 at peg 16', () {
       expect(_makeAdventurer(xpPegs: 16).currentRank, equals(4));
+      expect(_makeAdventurer(xpPegs: 20).currentRank, equals(4));
     });
 
-    test('rank 5 at peg 17', () {
-      expect(_makeAdventurer(xpPegs: 17).currentRank, equals(5));
-      expect(_makeAdventurer(xpPegs: 20).currentRank, equals(5));
-    });
-
-    test('rank 6 at peg 21', () {
-      expect(_makeAdventurer(xpPegs: 21).currentRank, equals(6));
+    test('rank 5 (max) at peg 21', () {
+      expect(_makeAdventurer(xpPegs: 21).currentRank, equals(5));
+      expect(_makeAdventurer(xpPegs: 25).currentRank, equals(5));
     });
   });
 

@@ -16,7 +16,11 @@ Here is the finalized Product Requirements Document (PRD) summary for the **Mala
 ### **2.1 Adventurer Dashboard (The "Triple-Stat" Logic)**
 
 * **Stats Tracked:** Health, Magic (Vigor), Skill, and Action Points (AP).
-* **Stat Architecture:** Each stat maintains a **Starting** value (base), **Current** value (live), and **Max** value (cap).
+* **Stat Architecture:** Each stat maintains three values:
+  * **Starting** — the base value for the character template; shown on the character sheet for reference.
+  * **Potential** — the maximum the stat can ever reach (formerly "Max"); increased by rank-up rewards.
+  * **Current** — the live in-game value, starts equal to Starting, adjusted up and down during play.
+* **Character Sheet Layout:** A static "Stats" section displays Starting and Potential side-by-side. A separate "Battle" section shows the live Current value with increment/decrement controls.
 * **AP System:** 2 primary slots per turn with a tap-to-dim toggle and a global "Reset All" function.
 
 ### **2.2 Battle View & Status Effects**
@@ -27,15 +31,42 @@ Here is the finalized Product Requirements Document (PRD) summary for the **Mala
 
 ### **2.3 Experience & Rank Progression**
 
-* **XP Track:** 21 total pegs across 3 tiers (Novice, Veteran, Legend).
-* **Rank Thresholds:** Ranks 1–6 unlocked at specific peg counts (3 and 7 of each tier). Threshold logic lives as a computed property or static method on `Adventurer` — not in the UI layer.
-* **Rewards:** Automated prompts to increase a Max Stat or choose a new Skill from the Class Skill Tree.
+* **Rank Cap:** Each adventurer has up to 5 rank levels (Rank 1–5). Rank 0 is the starting state.
+* **Per-Rank XP Cost:** Each rank has its own XP threshold stored on the character template (e.g., Rank 1 costs 3 XP, Rank 2 costs 4 XP). This varies by character — it is not a fixed global table.
+* **XP Track UI:** Displayed as one row per rank level (up to 5 rows). Each row shows the XP pegs required for that rank, filled as the player earns XP. The active rank row is highlighted; completed rows are fully filled.
+* **Rank Thresholds:** Computed from the per-rank cost list on the character template, not a hardcoded peg count. Threshold logic lives as a computed property on `Adventurer` — not in the UI layer.
+* **Rewards:** Automated prompts to increase a Potential Stat or choose a new Skill from the Class Skill Tree.
 
 ### **2.4 Skills & Class Integration**
 
-* **Class System:** Pre-defined classes (e.g., Maladaar, Berserker) that filter available skills.
-* **Skill Prerequisites:** Tiered skill nodes (Tier 1 must be owned to buy Tier 2).
+* **Class System:** Pre-defined classes (e.g., Maladaar, Berserker) that filter available skills. Class is assigned when adding an adventurer to the party — not after creation.
+* **Starting Skills:** At character creation, the adventurer may immediately unlock a number of Tier 1 skills equal to their starting Skill stat value. A skill selection screen is shown as part of the "Add Adventurer" flow after class is chosen.
+* **Skill Prerequisites:** Tiered skill nodes (Tier 1 must be owned to unlock Tier 2 and above).
 * **Skill Pegs:** A **separate counter** on `Adventurer`, independent of XP Pegs. The UI decrements a Skill Peg when a skill is activated.
+
+---
+
+## 2.5 Premade Character Templates
+
+* **Template Library:** The game ships with a fixed set of named adventurer templates (e.g., "Aldric the Bold", "Senna Duskwalker"). Each template defines the character's name, portrait reference, and base stat block (Starting and Potential for Health, Magic, Skill, Action) along with the per-rank XP cost list.
+* **Party Creation Flow:** When adding an adventurer to a party the user:
+  1. Picks a premade template from a scrollable gallery.
+  2. Assigns a class to that adventurer (class determines available skills).
+  3. Selects starting Tier 1 skills up to the template's starting Skill value.
+* **Template Data:** Stored in `lib/models/adventurer_templates.dart` as a `const` list — not user-editable, not persisted in Hive.
+* **Uniqueness:** The same template can be used by multiple party members (house-rule support); no enforcement required.
+
+---
+
+## 2.6 Reference Databases (View-Only)
+
+The app exposes three read-only reference screens accessible from the main drawer:
+
+* **Items Database** — full list of all `EquipmentItem` definitions (name, color/type, rarity, slot size). Filterable by color and rarity. Tapping an entry shows full detail.
+* **Skills Database** — full list of all skills grouped by class and tier. Filterable by class. Shows name, description, tier, and prerequisite.
+* **Classes Database** — list of all playable classes with a description, stat affinities, and a preview of their Tier 1 skill list.
+
+These screens are purely informational — no mutations occur from them. Data is sourced from the same `const` data files used by the rest of the app (`kAllSkills`, `kAllClasses`, `kAllItems`).
 
 ---
 
@@ -105,7 +136,7 @@ This handles the "App Shell," JSON persistence, and navigation.
 * **`ProviderScope` (Riverpod)**: Holds the `PartyState` (List of Adventurers).
 * **`MainScaffold`**:
 * **`AppBar`**: Includes the "Party Name," "JSON Export/Import" buttons, and the "End Quest (Rest)" button.
-* **`Drawer`**: To switch between different saved Parties.
+* **`Drawer`**: Switch between saved parties; links to the three reference database screens (Items, Skills, Classes).
 * **`Body`**:
 * **`ResponsiveLayout`** (breakpoint: 600px): Switches between `DesktopView` (side-by-side cards) and `MobileView` (PageView/TabBar navigation).
 
@@ -231,17 +262,17 @@ class ItemTile extends StatelessWidget {
 
 ### **The `StatCounter` Widget**
 
-To handle **Starting/Current/Max** logic visually:
+Two display modes for the same widget:
 
-* Show **Current** as a large number in the center.
-* Show **Max** in small text at the bottom right.
-* Use a "Plus/Minus" system where tapping "Plus" checks against `maxValue` before incrementing.
+* **Reference mode** (character sheet): Shows **Starting** and **Potential** side-by-side, read-only.
+* **Battle mode** (live play): Shows **Current** as a large number with Plus/Minus buttons. Checks against `potential` before incrementing. Shows `potential` in small text for context.
 
 ### **The `XPTracker` Widget**
 
-* Use a `Wrap` widget with 21 `XPPeg` (CustomPaint or Container) widgets.
-* Every 3rd and 7th peg in a tier should have a small "Rank Up" icon next to it to visually prompt the user that a reward is coming.
-* Rank threshold logic is a computed property on `Adventurer`, not in this widget.
+* Rendered as a `Column` of up to 5 rank rows. Each row represents one rank level and contains a number of peg dots equal to the XP cost for that rank.
+* Pegs in completed ranks are fully filled. Pegs in the current rank are filled up to the adventurer's XP progress within that rank. Future rank rows are empty.
+* The active rank row is visually highlighted (e.g., brighter border or label).
+* Rank threshold logic is a computed property on `Adventurer` using the per-rank cost list — not hardcoded in this widget.
 
 ---
 
@@ -257,15 +288,15 @@ enum Rarity { common, uncommon, rare, exclusive }
 enum StatusEffect { poison, bless, stun /* ... extend as needed */ }
 
 class MaladumStat {
-  final int starting;
-  int current;
-  int max;
+  final int starting;   // base value from template; reference-only
+  int current;          // live in-game value; starts = starting
+  int potential;        // cap (formerly "max"); increased by rank-up rewards
 
-  MaladumStat({required this.starting, required this.max}) : current = starting;
+  MaladumStat({required this.starting, required this.potential}) : current = starting;
 
-  Map<String, dynamic> toJson() => {'starting': starting, 'current': current, 'max': max};
+  Map<String, dynamic> toJson() => {'starting': starting, 'current': current, 'potential': potential};
   factory MaladumStat.fromJson(Map<String, dynamic> json) =>
-      MaladumStat(starting: json['starting'], max: json['max'])..current = json['current'];
+      MaladumStat(starting: json['starting'], potential: json['potential'])..current = json['current'];
 }
 
 class EquipmentItem {
@@ -302,14 +333,16 @@ class EquipmentItem {
 
 class Adventurer {
   String name;
+  String templateId;       // references AdventurerTemplate.id
   String characterClass;
   MaladumStat health;
   MaladumStat magic;
   MaladumStat skill;
   MaladumStat action;
 
-  int xpPegs = 0;       // 0 to 21
-  int skillPegs = 0;    // separate from XP; spent when activating skills
+  int xpPegs = 0;          // total XP earned (sum across all ranks)
+  int skillPegs = 0;       // separate from XP; spent when activating skills
+  List<int> rankXpCosts;   // per-rank XP thresholds from template, e.g. [3, 4, 4, 5, 5]
 
   List<StatusEffect?> statusSlots = [null, null, null]; // 3 typed status slots
 
@@ -319,25 +352,26 @@ class Adventurer {
 
   Adventurer({
     required this.name,
+    required this.templateId,
     required this.characterClass,
     required this.health,
     required this.magic,
     required this.skill,
     required this.action,
+    required this.rankXpCosts,
   });
 
   int get usedGearVolume => gearSlots.whereType<EquipmentItem>().fold(0, (sum, i) => sum + i.slots);
   int get usedPackVolume => packSlots.whereType<EquipmentItem>().fold(0, (sum, i) => sum + i.slots);
 
-  // Rank computed from XP pegs (thresholds: 3 and 7 per tier)
+  // Rank computed from cumulative XP cost list (up to 5 ranks)
   int get currentRank {
-    if (xpPegs >= 21) return 6;
-    if (xpPegs >= 17) return 5;
-    if (xpPegs >= 14) return 4;
-    if (xpPegs >= 10) return 3;
-    if (xpPegs >= 7)  return 2;
-    if (xpPegs >= 3)  return 1;
-    return 0;
+    int cumulative = 0;
+    for (int i = 0; i < rankXpCosts.length; i++) {
+      cumulative += rankXpCosts[i];
+      if (xpPegs < cumulative) return i;
+    }
+    return rankXpCosts.length; // max rank achieved
   }
 
   // JSON serialization

@@ -4,20 +4,28 @@ import 'enums.dart';
 import 'equipment_item.dart';
 import 'maladum_stat.dart';
 
+// Default per-rank XP costs used when no template data is available.
+const List<int> kDefaultRankXpCosts = [3, 4, 4, 5, 5];
+
 class Adventurer {
   final String id;
   String name;
+  // ID of the AdventurerTemplate this character was created from.
+  String? templateId;
+  // ID of the CharacterClass assigned to this character.
   String characterClass;
   MaladumStat health;
   MaladumStat magic;
   MaladumStat skill;
   MaladumStat action;
 
-  int xpPegs; // 0–21
+  int xpPegs;
   int skillPegs;
+  // XP required to complete each rank row, derived from the template.
+  List<int> rankXpCosts;
   List<String> ownedSkillIds;
 
-  List<bool> apSlots;            // always 2 elements; true = spent
+  List<bool> apSlots;              // always 2 elements; true = spent
   List<StatusEffect?> statusSlots; // always 3 elements
   List<EquipmentItem?> gearSlots;  // always 4 elements
   List<EquipmentItem?> packSlots;  // always 10 elements
@@ -30,14 +38,17 @@ class Adventurer {
     required this.magic,
     required this.skill,
     required this.action,
+    this.templateId,
     this.xpPegs = 0,
     this.skillPegs = 0,
+    List<int>? rankXpCosts,
     List<String>? ownedSkillIds,
     List<bool>? apSlots,
     List<StatusEffect?>? statusSlots,
     List<EquipmentItem?>? gearSlots,
     List<EquipmentItem?>? packSlots,
   })  : id = id ?? _generateId(),
+        rankXpCosts = rankXpCosts ?? kDefaultRankXpCosts,
         ownedSkillIds = ownedSkillIds ?? [],
         apSlots = apSlots ?? [false, false],
         statusSlots = statusSlots ?? List.filled(3, null),
@@ -52,20 +63,22 @@ class Adventurer {
       .whereType<EquipmentItem>()
       .fold(0, (sum, item) => sum + item.slots);
 
-  // Thresholds per PRD: ranks 1–6 at pegs 3, 7, 10, 14, 17, 21.
+  // Rank is computed from cumulative rankXpCosts thresholds (up to 5 ranks).
   int get currentRank {
-    if (xpPegs >= 21) return 6;
-    if (xpPegs >= 17) return 5;
-    if (xpPegs >= 14) return 4;
-    if (xpPegs >= 10) return 3;
-    if (xpPegs >= 7) return 2;
-    if (xpPegs >= 3) return 1;
-    return 0;
+    final costs =
+        rankXpCosts.isEmpty ? kDefaultRankXpCosts : rankXpCosts;
+    int cumulative = 0;
+    for (int i = 0; i < costs.length; i++) {
+      cumulative += costs[i];
+      if (xpPegs < cumulative) return i;
+    }
+    return costs.length;
   }
 
   factory Adventurer.clone(Adventurer source) => Adventurer(
         id: source.id,
         name: source.name,
+        templateId: source.templateId,
         characterClass: source.characterClass,
         health: source.health,
         magic: source.magic,
@@ -73,6 +86,7 @@ class Adventurer {
         action: source.action,
         xpPegs: source.xpPegs,
         skillPegs: source.skillPegs,
+        rankXpCosts: List.of(source.rankXpCosts),
         ownedSkillIds: List.of(source.ownedSkillIds),
         apSlots: List.of(source.apSlots),
         statusSlots: List.of(source.statusSlots),
@@ -83,6 +97,7 @@ class Adventurer {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        if (templateId != null) 'templateId': templateId,
         'characterClass': characterClass,
         'health': health.toJson(),
         'magic': magic.toJson(),
@@ -90,6 +105,7 @@ class Adventurer {
         'action': action.toJson(),
         'xpPegs': xpPegs,
         'skillPegs': skillPegs,
+        'rankXpCosts': rankXpCosts,
         'ownedSkillIds': ownedSkillIds,
         'apSlots': apSlots,
         'statusSlots': statusSlots.map((s) => s?.name).toList(),
@@ -116,9 +132,15 @@ class Adventurer {
     final rawAp = (json['apSlots'] as List?)?.map((e) => e as bool).toList()
         ?? [false, false];
 
+    final rawCosts = (json['rankXpCosts'] as List?)
+            ?.map((e) => e as int)
+            .toList() ??
+        kDefaultRankXpCosts;
+
     return Adventurer(
       id: json['id'] as String,
       name: json['name'] as String,
+      templateId: json['templateId'] as String?,
       characterClass: json['characterClass'] as String,
       health: MaladumStat.fromJson(json['health'] as Map<String, dynamic>),
       magic: MaladumStat.fromJson(json['magic'] as Map<String, dynamic>),
@@ -126,6 +148,7 @@ class Adventurer {
       action: MaladumStat.fromJson(json['action'] as Map<String, dynamic>),
       xpPegs: json['xpPegs'] as int,
       skillPegs: json['skillPegs'] as int,
+      rankXpCosts: rawCosts,
       ownedSkillIds: (json['ownedSkillIds'] as List?)
               ?.map((e) => e as String)
               .toList() ??

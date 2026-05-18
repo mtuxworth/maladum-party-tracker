@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/character_classes.dart';
 import '../models/enums.dart';
 import '../models/skill.dart';
 import '../models/skill_data.dart';
@@ -32,10 +33,14 @@ class _RankUpDialog extends ConsumerWidget {
     final adventurer = ref.watch(adventurerProvider(adventurerId));
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
+    final charClass = kAllClasses
+        .where((c) => c.id == adventurer.characterClass)
+        .firstOrNull;
+    final categories = charClass?.skillCategories ?? [];
     final availableSkills = kAllSkills
         .where(
           (s) =>
-              s.characterClass == adventurer.characterClass &&
+              categories.contains(s.category) &&
               !adventurer.ownedSkillIds.contains(s.id) &&
               (s.prerequisiteId == null ||
                   adventurer.ownedSkillIds.contains(s.prerequisiteId)),
