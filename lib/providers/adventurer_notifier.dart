@@ -34,7 +34,7 @@ class AdventurerNotifier
 
   void incrementStat(StatType type) {
     final stat = _statFor(type);
-    if (stat.current >= stat.max) return;
+    if (stat.current >= stat.potential) return;
     stat.current++;
     _emit();
   }
@@ -46,9 +46,9 @@ class AdventurerNotifier
     _emit();
   }
 
-  // Used for rank-up reward: +1 Max Stat.
+  // Used for rank-up reward: +1 Potential Stat.
   void increaseStatMax(StatType type) {
-    _statFor(type).max++;
+    _statFor(type).potential++;
     _emit();
   }
 
@@ -81,7 +81,8 @@ class AdventurerNotifier
   // ─── XP ──────────────────────────────────────────────────────────────────
 
   void setXpPegs(int pegs) {
-    state.xpPegs = pegs.clamp(0, 21);
+    final maxXp = state.rankXpCosts.fold(0, (a, b) => a + b);
+    state.xpPegs = pegs.clamp(0, maxXp);
     _emit();
   }
 

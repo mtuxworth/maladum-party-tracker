@@ -75,13 +75,13 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
       templateId: tmpl.id,
       characterClass: cls.id,
       health:
-          MaladumStat(starting: tmpl.healthStart, max: tmpl.healthPotential),
+          MaladumStat(starting: tmpl.healthStart, potential: tmpl.healthPotential),
       magic:
-          MaladumStat(starting: tmpl.magicStart, max: tmpl.magicPotential),
+          MaladumStat(starting: tmpl.magicStart, potential: tmpl.magicPotential),
       skill:
-          MaladumStat(starting: tmpl.skillStart, max: tmpl.skillPotential),
+          MaladumStat(starting: tmpl.skillStart, potential: tmpl.skillPotential),
       action:
-          MaladumStat(starting: tmpl.actionStart, max: tmpl.actionPotential),
+          MaladumStat(starting: tmpl.actionStart, potential: tmpl.actionPotential),
       skillPegs: tmpl.skillStart,
       rankXpCosts: List.of(tmpl.rankXpCosts),
       ownedSkillIds: _pickedSkillIds.toList(),

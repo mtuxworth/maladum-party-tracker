@@ -23,13 +23,20 @@ Widget _build(StatType type, String label, Adventurer adventurer) =>
 
 void main() {
   group('StatCounter', () {
-    testWidgets('renders current and max values', (tester) async {
+    testWidgets('renders current value', (tester) async {
       final adventurer = makeTestAdventurer(healthStarting: 3, healthMax: 5);
 
       await tester.pumpWidget(_build(StatType.health, 'Health', adventurer));
 
       expect(find.text('3'), findsOneWidget);
-      expect(find.text('/5'), findsOneWidget);
+    });
+
+    testWidgets('renders starting and potential reference', (tester) async {
+      final adventurer = makeTestAdventurer(healthStarting: 3, healthMax: 5);
+
+      await tester.pumpWidget(_build(StatType.health, 'Health', adventurer));
+
+      expect(find.text('3 → 5'), findsOneWidget);
     });
 
     testWidgets('decrease button is disabled when current is 0', (tester) async {
@@ -44,7 +51,7 @@ void main() {
       expect(decreaseButton.onPressed, isNull);
     });
 
-    testWidgets('increase button is disabled when at max', (tester) async {
+    testWidgets('increase button is disabled when at potential', (tester) async {
       final adventurer = makeTestAdventurer(healthStarting: 5, healthMax: 5);
 
       await tester.pumpWidget(_build(StatType.health, 'Health', adventurer));
@@ -55,9 +62,9 @@ void main() {
       expect(increaseButton.onPressed, isNull);
     });
 
-    testWidgets('increase button is enabled when below max', (tester) async {
+    testWidgets('increase button is enabled when below potential', (tester) async {
       final adventurer = makeTestAdventurer(healthStarting: 5, healthMax: 5);
-      adventurer.health = MaladumStat(starting: 3, max: 5);
+      adventurer.health = MaladumStat(starting: 3, potential: 5);
 
       await tester.pumpWidget(_build(StatType.health, 'Health', adventurer));
 

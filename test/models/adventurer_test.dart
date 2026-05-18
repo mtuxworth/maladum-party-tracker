@@ -7,10 +7,10 @@ import 'package:flutter_maladum/models/maladum_stat.dart';
 Adventurer _makeAdventurer({int xpPegs = 0}) => Adventurer(
       name: 'Test',
       characterClass: 'Berserker',
-      health: MaladumStat(starting: 5, max: 5),
-      magic: MaladumStat(starting: 3, max: 3),
-      skill: MaladumStat(starting: 4, max: 4),
-      action: MaladumStat(starting: 2, max: 2),
+      health: MaladumStat(starting: 5, potential: 5),
+      magic: MaladumStat(starting: 3, potential: 3),
+      skill: MaladumStat(starting: 4, potential: 4),
+      action: MaladumStat(starting: 2, potential: 2),
       xpPegs: xpPegs,
     );
 

@@ -100,7 +100,7 @@ class PartyNotifier extends Notifier<PartyState> {
     final updated = state.adventurers.map((a) {
       a.statusSlots = List.filled(3, null);
       a.apSlots = [false, false];
-      a.magic.current = (a.magic.current + 2).clamp(0, a.magic.max);
+      a.magic.current = (a.magic.current + 2).clamp(0, a.magic.potential);
       return Adventurer.clone(a);
     }).toList();
     state = PartyState(name: state.name, adventurers: updated);
