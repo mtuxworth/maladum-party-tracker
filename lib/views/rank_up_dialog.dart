@@ -52,7 +52,7 @@ class _RankUpDialog extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Rank $newRank!',
+          Text('Level ${newRank + 1}!',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge

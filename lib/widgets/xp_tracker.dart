@@ -31,7 +31,7 @@ class XPTracker extends ConsumerWidget {
             children: [
               SizedBox(
                 width: 52,
-                child: Text('Rank ${rankIndex + 1}', style: secondary),
+                child: Text('Level ${rankIndex + 1}', style: secondary),
               ),
               ...List.generate(rankCost, (pegIndex) {
                 final absolutePeg = start + pegIndex + 1;

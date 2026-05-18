@@ -70,7 +70,7 @@ class _RankBadge extends StatelessWidget {
         border: Border.all(color: primary),
       ),
       child: Text(
-        'Rank $rank',
+        'Level ${rank + 1}',
         style: Theme.of(context)
             .textTheme
             .labelSmall
