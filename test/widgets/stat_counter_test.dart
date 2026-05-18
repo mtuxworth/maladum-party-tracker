@@ -31,14 +31,6 @@ void main() {
       expect(find.text('3'), findsOneWidget);
     });
 
-    testWidgets('renders starting and potential reference', (tester) async {
-      final adventurer = makeTestAdventurer(healthStarting: 3, healthMax: 5);
-
-      await tester.pumpWidget(_build(StatType.health, 'Health', adventurer));
-
-      expect(find.text('3 → 5'), findsOneWidget);
-    });
-
     testWidgets('decrease button is disabled when current is 0', (tester) async {
       final adventurer = makeTestAdventurer(healthStarting: 5, healthMax: 5);
       adventurer.health.current = 0;

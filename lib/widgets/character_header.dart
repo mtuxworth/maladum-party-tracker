@@ -41,23 +41,70 @@ class CharacterHeader extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 4),
-                  _RankBadge(rank: adventurer.currentRank),
+                  _LevelBadge(rank: adventurer.currentRank),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        XPTracker(adventurerId: adventurerId),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: XPTracker(adventurerId: adventurerId)),
+            const SizedBox(width: 16),
+            _StatReference(adventurerId: adventurerId),
+          ],
+        ),
       ],
     );
   }
 }
 
-class _RankBadge extends StatelessWidget {
+class _StatReference extends ConsumerWidget {
+  final String adventurerId;
+
+  const _StatReference({required this.adventurerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = ref.watch(adventurerProvider(adventurerId));
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+        );
+    final valueStyle = Theme.of(context).textTheme.bodySmall;
+
+    Widget row(String name, int start, int potential) => Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                child: Text(name, style: labelStyle),
+              ),
+              Text('$start → $potential', style: valueStyle),
+            ],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        row('H', a.health.starting, a.health.potential),
+        row('M', a.magic.starting, a.magic.potential),
+        row('Sk', a.skill.starting, a.skill.potential),
+        row('Ac', a.action.starting, a.action.potential),
+      ],
+    );
+  }
+}
+
+class _LevelBadge extends StatelessWidget {
   final int rank;
 
-  const _RankBadge({required this.rank});
+  const _LevelBadge({required this.rank});
 
   @override
   Widget build(BuildContext context) {

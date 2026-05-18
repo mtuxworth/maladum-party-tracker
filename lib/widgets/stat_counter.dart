@@ -23,20 +23,11 @@ class StatCounter extends ConsumerWidget {
     final adventurer = ref.watch(adventurerProvider(adventurerId));
     final stat = _statFor(adventurer);
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
-    final secondary = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-        );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 2),
-        Text(
-          '${stat.starting} → ${stat.potential}',
-          style: secondary,
-        ),
-        const SizedBox(height: 2),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
