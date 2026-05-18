@@ -1,5 +1,5 @@
 class MaladumStat {
-  final int starting;
+  int starting;
   int current;
   int potential;
 

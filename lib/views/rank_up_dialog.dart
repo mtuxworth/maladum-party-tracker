@@ -68,40 +68,44 @@ class _RankUpDialog extends ConsumerWidget {
           children: [
             const Text('Choose a permanent reward:'),
             const SizedBox(height: 16),
-            _SectionLabel('Boost a Max Stat'),
+            _SectionLabel('Boost a Stat'),
             const SizedBox(height: 6),
-            _RewardTile(
-              icon: Icons.favorite,
-              label: '+1 Health Max',
-              onTap: () {
-                notifier.increaseStatMax(StatType.health);
-                Navigator.pop(context);
-              },
-            ),
-            _RewardTile(
-              icon: Icons.auto_fix_high,
-              label: '+1 Magic Max',
-              onTap: () {
-                notifier.increaseStatMax(StatType.magic);
-                Navigator.pop(context);
-              },
-            ),
-            _RewardTile(
-              icon: Icons.sports_martial_arts,
-              label: '+1 Skill Max',
-              onTap: () {
-                notifier.increaseStatMax(StatType.skill);
-                Navigator.pop(context);
-              },
-            ),
-            _RewardTile(
-              icon: Icons.bolt,
-              label: '+1 Action Max',
-              onTap: () {
-                notifier.increaseStatMax(StatType.action);
-                Navigator.pop(context);
-              },
-            ),
+            if (adventurer.health.starting < adventurer.health.potential)
+              _RewardTile(
+                icon: Icons.favorite,
+                label: '+1 Health',
+                onTap: () {
+                  notifier.increaseStatStarting(StatType.health);
+                  Navigator.pop(context);
+                },
+              ),
+            if (adventurer.skill.starting < adventurer.skill.potential)
+              _RewardTile(
+                icon: Icons.sports_martial_arts,
+                label: '+1 Skill',
+                onTap: () {
+                  notifier.increaseStatStarting(StatType.skill);
+                  Navigator.pop(context);
+                },
+              ),
+            if (adventurer.magic.starting < adventurer.magic.potential)
+              _RewardTile(
+                icon: Icons.auto_fix_high,
+                label: '+1 Magic',
+                onTap: () {
+                  notifier.increaseStatStarting(StatType.magic);
+                  Navigator.pop(context);
+                },
+              ),
+            if (adventurer.action.starting < adventurer.action.potential)
+              _RewardTile(
+                icon: Icons.bolt,
+                label: '+1 Action',
+                onTap: () {
+                  notifier.increaseStatStarting(StatType.action);
+                  Navigator.pop(context);
+                },
+              ),
             if (availableSkills.isNotEmpty) ...[
               const SizedBox(height: 16),
               _SectionLabel('Unlock a Skill'),

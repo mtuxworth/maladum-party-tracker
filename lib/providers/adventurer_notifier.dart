@@ -46,7 +46,16 @@ class AdventurerNotifier
     _emit();
   }
 
-  // Used for rank-up reward: +1 Potential Stat.
+  // Rank-up reward: +1 starting value (and current, capped at potential).
+  // Only valid when starting < potential.
+  void increaseStatStarting(StatType type) {
+    final stat = _statFor(type);
+    stat.starting++;
+    stat.current = (stat.current + 1).clamp(0, stat.potential);
+    _emit();
+  }
+
+  // End-quest reward: +1 potential (raises the ceiling).
   void increaseStatMax(StatType type) {
     _statFor(type).potential++;
     _emit();
