@@ -6,12 +6,12 @@ import 'character_class.dart';
 // should be corrected from the physical class boards.
 const List<CharacterClass> kAllClasses = [
   CharacterClass(
-    id: 'prymorist',
-    name: 'Prymorist',
+    id: 'berserker',
+    name: 'Berserker',
     description:
-        'Elemental Maladaar specialising in fire, barriers '
-        'and environmental magic.',
-    skillCategories: ['Magic', 'Endurance', 'Support'],
+        'An aggressive melee fighter who sacrifices defence '
+        'for overwhelming offensive power.',
+    skillCategories: ['Melee', 'Agility', 'Endurance'],
   ),
   CharacterClass(
     id: 'eudaemon',
@@ -22,28 +22,12 @@ const List<CharacterClass> kAllClasses = [
     skillCategories: ['Magic', 'Agility', 'Survival'],
   ),
   CharacterClass(
-    id: 'rook',
-    name: 'Rook',
+    id: 'prymorist',
+    name: 'Prymorist',
     description:
-        'Vicarious Maladaar who bends the minds and fates '
-        'of others through illusion and control.',
-    skillCategories: ['Magic', 'Cunning', 'Support'],
-  ),
-  CharacterClass(
-    id: 'rogue',
-    name: 'Rogue',
-    description:
-        'A nimble opportunist who thrives in shadow, '
-        'subterfuge and close-quarters trickery.',
-    skillCategories: ['Cunning', 'Stealth', 'Agility'],
-  ),
-  CharacterClass(
-    id: 'warrior',
-    name: 'Warrior',
-    description:
-        'A stalwart frontline fighter built for sustained '
-        'melee combat and enduring punishment.',
-    skillCategories: ['Melee', 'Endurance', 'Support'],
+        'Elemental Maladaar specialising in fire, barriers '
+        'and environmental magic.',
+    skillCategories: ['Magic', 'Endurance', 'Support'],
   ),
   CharacterClass(
     id: 'ranger',
@@ -54,11 +38,27 @@ const List<CharacterClass> kAllClasses = [
     skillCategories: ['Ranged', 'Survival', 'Stealth'],
   ),
   CharacterClass(
-    id: 'berserker',
-    name: 'Berserker',
+    id: 'rogue',
+    name: 'Rogue',
     description:
-        'An aggressive melee fighter who sacrifices defence '
-        'for overwhelming offensive power.',
-    skillCategories: ['Melee', 'Agility', 'Endurance'],
+        'A nimble opportunist who thrives in shadow, '
+        'subterfuge and close-quarters trickery.',
+    skillCategories: ['Cunning', 'Stealth', 'Agility'],
+  ),
+  CharacterClass(
+    id: 'rook',
+    name: 'Rook',
+    description:
+        'Vicarious Maladaar who bends the minds and fates '
+        'of others through illusion and control.',
+    skillCategories: ['Magic', 'Cunning', 'Support'],
+  ),
+  CharacterClass(
+    id: 'warrior',
+    name: 'Warrior',
+    description:
+        'A stalwart frontline fighter built for sustained '
+        'melee combat and enduring punishment.',
+    skillCategories: ['Melee', 'Endurance', 'Support'],
   ),
 ];
