@@ -21,26 +21,37 @@ class InventoryPackGrid extends ConsumerWidget {
     );
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
+    // Build children, skipping continuation indices (same item stored at
+    // consecutive slots for multi-slot items). Use flex=slots so multi-slot
+    // items occupy proportionally more width in the row.
+    final children = <Widget>[];
+    String? lastItemId;
+    for (int i = 0; i < maxPackSlots; i++) {
+      final item = packSlots[i];
+      if (item != null && item.id == lastItemId) continue;
+      lastItemId = item?.id;
+      final flex = item?.slots ?? 1;
+      children.add(Expanded(
+        flex: flex,
+        child: Padding(
+          padding: EdgeInsets.only(left: children.isEmpty ? 0 : 4),
+          child: item != null
+              ? _CompactItemTile(
+                  item: item,
+                  adventurerId: adventurerId,
+                  slotIndex: i,
+                )
+              : _EmptyPackSlot(
+                  onTap: () => _addItem(context, notifier),
+                ),
+        ),
+      ));
+    }
     return SizedBox(
       height: _kSlotSize,
       child: Row(
-        children: List.generate(maxPackSlots, (i) {
-          final item = packSlots[i];
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
-              child: item != null
-                  ? _CompactItemTile(
-                      item: item,
-                      adventurerId: adventurerId,
-                      slotIndex: i,
-                    )
-                  : _EmptyPackSlot(
-                      onTap: () => _addItem(context, notifier),
-                    ),
-            ),
-          );
-        }),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
@@ -54,7 +65,7 @@ class InventoryPackGrid extends ConsumerWidget {
     final ok = notifier.addPackItem(item);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough pack space.')),
+        const SnackBar(content: Text('Not enough inventory space.')),
       );
     }
   }
@@ -75,14 +86,16 @@ class _CompactItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final borderColor = kItemBorderColors[item.color]!;
-    final others = ref
-        .watch(partyProvider)
-        .adventurers
-        .where((a) => a.id != adventurerId)
-        .toList();
 
     return GestureDetector(
-      onLongPress: () => _showContextMenu(context, ref, others),
+      onTap: () => showItemDetailSheet(
+        context,
+        ref,
+        item: item,
+        adventurerId: adventurerId,
+        fromGear: false,
+        slotIndex: slotIndex,
+      ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
@@ -115,62 +128,6 @@ class _CompactItemTile extends ConsumerWidget {
     );
   }
 
-  void _showContextMenu(
-    BuildContext context,
-    WidgetRef ref,
-    List others,
-  ) {
-    final notifier = ref.read(adventurerProvider(adventurerId).notifier);
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                item.name,
-                style: ctx.textTheme.titleMedium,
-              ),
-            ),
-            if (others.isNotEmpty) ...[
-              const Divider(height: 0),
-              ...others.map(
-                (target) => ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text('Give to ${target.name}'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    final ok = notifier.givePackItem(slotIndex, target.id);
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text("${target.name}'s pack is full.")),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ],
-            if (!item.isInnate) ...[
-              const Divider(height: 0),
-              ListTile(
-                leading: const Icon(Icons.delete_outline,
-                    color: Color(0xFFC62828)),
-                title: const Text('Remove'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  notifier.setPackSlot(slotIndex, null);
-                },
-              ),
-            ],
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _EmptyPackSlot extends StatelessWidget {
@@ -198,8 +155,4 @@ class _EmptyPackSlot extends StatelessWidget {
       ),
     );
   }
-}
-
-extension on BuildContext {
-  TextTheme get textTheme => Theme.of(this).textTheme;
 }

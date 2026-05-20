@@ -52,16 +52,26 @@ class Adventurer {
         ownedSkillIds = ownedSkillIds ?? [],
         apSlots = apSlots ?? [false, false],
         statusSlots = statusSlots ?? List.filled(3, null),
-        gearSlots = gearSlots ?? List.filled(4, null),
+        gearSlots = gearSlots ?? List.filled(maxGearSlots, null),
         packSlots = packSlots ?? List.filled(10, null);
 
-  int get usedGearVolume => gearSlots
-      .whereType<EquipmentItem>()
-      .fold(0, (sum, item) => sum + item.slots);
+  int get usedGearVolume {
+    final seen = <String>{};
+    int total = 0;
+    for (final item in gearSlots.whereType<EquipmentItem>()) {
+      if (seen.add(item.id)) total += item.slots;
+    }
+    return total;
+  }
 
-  int get usedPackVolume => packSlots
-      .whereType<EquipmentItem>()
-      .fold(0, (sum, item) => sum + item.slots);
+  int get usedPackVolume {
+    final seen = <String>{};
+    int total = 0;
+    for (final item in packSlots.whereType<EquipmentItem>()) {
+      if (seen.add(item.id)) total += item.slots;
+    }
+    return total;
+  }
 
   // Rank is computed from cumulative rankXpCosts thresholds (up to 5 ranks).
   int get currentRank {
@@ -126,7 +136,7 @@ class Adventurer {
 
     // Pad to fixed sizes to guard against truncated JSON.
     while (rawStatus.length < 3) { rawStatus.add(null); }
-    while (rawGear.length < 4) { rawGear.add(null); }
+    while (rawGear.length < maxGearSlots) { rawGear.add(null); }
     while (rawPack.length < 10) { rawPack.add(null); }
 
     final rawAp = (json['apSlots'] as List?)?.map((e) => e as bool).toList()
@@ -155,7 +165,7 @@ class Adventurer {
           [],
       apSlots: rawAp,
       statusSlots: rawStatus.take(3).toList(),
-      gearSlots: rawGear.take(4).toList(),
+      gearSlots: rawGear.take(maxGearSlots).toList(),
       packSlots: rawPack.take(10).toList(),
     );
   }

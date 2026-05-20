@@ -119,48 +119,110 @@ class AdventurerNotifier
 
   // ─── Inventory ───────────────────────────────────────────────────────────
 
+  // Clears all gear indices occupied by the item at [index].
+  void _clearGearItem(int index) {
+    final existing = state.gearSlots[index];
+    if (existing == null) return;
+    for (int i = 0; i < maxGearSlots; i++) {
+      if (state.gearSlots[i]?.id == existing.id) state.gearSlots[i] = null;
+    }
+  }
+
+  // Clears all pack indices occupied by the item at [index].
+  void _clearPackItem(int index) {
+    final existing = state.packSlots[index];
+    if (existing == null) return;
+    for (int i = 0; i < maxPackSlots; i++) {
+      if (state.packSlots[i]?.id == existing.id) state.packSlots[i] = null;
+    }
+  }
+
+  // Returns the start index of [slots] consecutive null gear slots, or -1.
+  int _findGearSlot(int slots) {
+    for (int i = 0; i <= maxGearSlots - slots; i++) {
+      if (List.generate(slots, (d) => state.gearSlots[i + d])
+          .every((s) => s == null)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  // Returns the start index of [slots] consecutive null pack slots, or -1.
+  int _findPackSlot(int slots) {
+    for (int i = 0; i <= maxPackSlots - slots; i++) {
+      if (List.generate(slots, (d) => state.packSlots[i + d])
+          .every((s) => s == null)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   void setGearSlot(int index, EquipmentItem? item) {
     assert(index >= 0 && index < maxGearSlots);
-    state.gearSlots[index] = item;
+    if (item == null) {
+      _clearGearItem(index);
+    } else {
+      state.gearSlots[index] = item;
+    }
     _emit();
   }
 
   void setPackSlot(int index, EquipmentItem? item) {
     assert(index >= 0 && index < maxPackSlots);
-    state.packSlots[index] = item;
+    if (item == null) {
+      _clearPackItem(index);
+    } else {
+      state.packSlots[index] = item;
+    }
     _emit();
   }
 
-  // Adds to first available gear slot. Armour (yellow) may displace an innate
-  // item to the pack. Returns false if there is no room.
+  // Adds to gear, filling [item.slots] consecutive null slots.
+  // Armour (yellow) may displace an innate item to the pack first.
+  // Returns false if there is no room.
   bool addGearItem(EquipmentItem item) {
     if (item.color == ItemColor.yellow) {
-      final innateIdx = state.gearSlots.indexWhere((s) => s?.isInnate == true);
+      final innateIdx =
+          state.gearSlots.indexWhere((s) => s?.isInnate == true);
       if (innateIdx != -1) {
         final innate = state.gearSlots[innateIdx]!;
         if (state.usedPackVolume + innate.slots > maxPackSlots) return false;
-        final packIdx = state.packSlots.indexWhere((s) => s == null);
+        final packIdx = _findPackSlot(innate.slots);
         if (packIdx == -1) return false;
-        state.packSlots[packIdx] = innate;
-        state.gearSlots[innateIdx] = item;
+        _clearGearItem(innateIdx);
+        for (int d = 0; d < innate.slots; d++) {
+          state.packSlots[packIdx + d] = innate;
+        }
+        final gearIdx = _findGearSlot(item.slots);
+        if (gearIdx == -1) return false;
+        for (int d = 0; d < item.slots; d++) {
+          state.gearSlots[gearIdx + d] = item;
+        }
         _emit();
         return true;
       }
     }
     if (state.usedGearVolume + item.slots > maxGearSlots) return false;
-    final idx = state.gearSlots.indexWhere((s) => s == null);
+    final idx = _findGearSlot(item.slots);
     if (idx == -1) return false;
-    state.gearSlots[idx] = item;
+    for (int d = 0; d < item.slots; d++) {
+      state.gearSlots[idx + d] = item;
+    }
     _emit();
     return true;
   }
 
-  // Adds to first available pack slot. Returns false if there is no room.
+  // Adds to pack, filling [item.slots] consecutive null slots.
+  // Returns false if there is no room.
   bool addPackItem(EquipmentItem item) {
     if (state.usedPackVolume + item.slots > maxPackSlots) return false;
-    final idx = state.packSlots.indexWhere((s) => s == null);
+    final idx = _findPackSlot(item.slots);
     if (idx == -1) return false;
-    state.packSlots[idx] = item;
+    for (int d = 0; d < item.slots; d++) {
+      state.packSlots[idx + d] = item;
+    }
     _emit();
     return true;
   }
@@ -176,7 +238,7 @@ class AdventurerNotifier
         .read(adventurerProvider(toAdventurerId).notifier)
         .receivePackItem(item);
     if (!ok) return false;
-    state.gearSlots[slotIndex] = null;
+    _clearGearItem(slotIndex);
     _emit();
     return true;
   }
@@ -189,7 +251,7 @@ class AdventurerNotifier
         .read(adventurerProvider(toAdventurerId).notifier)
         .receivePackItem(item);
     if (!ok) return false;
-    state.packSlots[slotIndex] = null;
+    _clearPackItem(slotIndex);
     _emit();
     return true;
   }

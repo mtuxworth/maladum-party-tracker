@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/adventurer.dart';
 import '../models/enums.dart';
+import '../models/equipment_data.dart';
 import '../models/equipment_item.dart';
+import '../models/item_abilities.dart';
 import '../providers/providers.dart';
 
 const Map<ItemColor, Color> kItemBorderColors = {
@@ -20,6 +21,223 @@ const Map<Rarity, String> _kRarityLabel = {
   Rarity.rare: 'R',
   Rarity.exclusive: 'E',
 };
+
+const Map<Rarity, String> _kRarityFull = {
+  Rarity.common: 'Common',
+  Rarity.uncommon: 'Uncommon',
+  Rarity.rare: 'Rare',
+  Rarity.exclusive: 'Exclusive',
+};
+
+const Map<ItemColor, String> _kColorType = {
+  ItemColor.blue: 'Weapon',
+  ItemColor.red: 'Gear',
+  ItemColor.yellow: 'Armour',
+  ItemColor.purple: 'Gem',
+  ItemColor.grey: 'Trap',
+};
+
+CatalogItem? _catalogItemById(String? catalogId) {
+  if (catalogId == null) return null;
+  final matches = kEquipmentCatalog.where((c) => c.id == catalogId);
+  return matches.isEmpty ? null : matches.first;
+}
+
+// Shows a detail sheet for any equipment item. Handles both gear and pack.
+void showItemDetailSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  required EquipmentItem item,
+  required String adventurerId,
+  required bool fromGear,
+  required int slotIndex,
+}) {
+  final notifier = ref.read(adventurerProvider(adventurerId).notifier);
+  final others = ref
+      .read(partyProvider)
+      .adventurers
+      .where((a) => a.id != adventurerId)
+      .toList();
+  final catalog = _catalogItemById(item.catalogId);
+  final borderColor = kItemBorderColors[item.color]!;
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => Dialog(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: (MediaQuery.of(ctx).size.width * 0.9).clamp(0.0, 380.0),
+          maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Detail header ──────────────────────────────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: borderColor,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          style: ctx.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        if (catalog != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2, bottom: 4),
+                            child: Text(
+                              catalog.category,
+                              style: ctx.textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[500]),
+                            ),
+                          ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            _InfoChip(
+                              label: _kColorType[item.color]!,
+                              color: borderColor,
+                            ),
+                            _InfoChip(
+                              label: _kRarityFull[item.rarity]!,
+                              color: Colors.grey,
+                            ),
+                            _InfoChip(
+                              label:
+                                  '${item.slots} slot${item.slots == 1 ? '' : 's'}',
+                              color: Colors.grey,
+                            ),
+                            if (catalog != null)
+                              _InfoChip(
+                                label: catalog.rank == 0
+                                    ? 'Exclusive'
+                                    : 'Rank ${catalog.rank}',
+                                color: catalog.rank == 0
+                                    ? const Color(0xFF6A1B9A)
+                                    : Colors.grey,
+                              ),
+                            if (item.isInnate)
+                              _InfoChip(
+                                label: 'Innate',
+                                color: const Color(0xFF6A1B9A),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              // ── Prices ────────────────────────────────────────────────
+              if (item.buyPrice != null || item.sellPrice != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (item.buyPrice != null)
+                      _PriceChip(
+                        label: 'Buy',
+                        value: item.buyPrice!,
+                        color: const Color(0xFF2E7D32),
+                      ),
+                    if (item.buyPrice != null && item.sellPrice != null)
+                      const SizedBox(width: 8),
+                    if (item.sellPrice != null)
+                      _PriceChip(
+                        label: 'Sell',
+                        value: item.sellPrice!,
+                        color: const Color(0xFFE65100),
+                      ),
+                  ],
+                ),
+              ],
+              // ── Abilities ──────────────────────────────────────────────
+              if (item.description.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                ...parseAbilityTokens(item.description).map(
+                  (entry) => _AbilityRow(
+                    token: entry.$1,
+                    ability: entry.$2,
+                  ),
+                ),
+              ],
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            // ── Actions ──────────────────────────────────────────────────
+            if (others.isNotEmpty) ...[
+              ...others.map(
+                (target) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.person),
+                  title: Text('Give to ${target.name}'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final ok = fromGear
+                        ? notifier.giveGearItem(slotIndex, target.id)
+                        : notifier.givePackItem(slotIndex, target.id);
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text("${target.name}'s inventory is full."),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+            ],
+            if (!item.isInnate)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Color(0xFFC62828),
+                ),
+                title: const Text('Remove'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (fromGear) {
+                    notifier.setGearSlot(slotIndex, null);
+                  } else {
+                    notifier.setPackSlot(slotIndex, null);
+                  }
+                },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Innate items can only be removed by equipping armour.',
+                  style: ctx.textTheme.bodySmall
+                      ?.copyWith(color: Colors.grey[600]),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
+}
 
 class ItemTile extends ConsumerWidget {
   final EquipmentItem item;
@@ -38,14 +256,16 @@ class ItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final borderColor = kItemBorderColors[item.color]!;
-    final others = ref
-        .watch(partyProvider)
-        .adventurers
-        .where((a) => a.id != adventurerId)
-        .toList();
 
     return GestureDetector(
-      onLongPress: () => _showContextMenu(context, ref, others),
+      onTap: () => showItemDetailSheet(
+        context,
+        ref,
+        item: item,
+        adventurerId: adventurerId,
+        fromGear: fromGear,
+        slotIndex: slotIndex,
+      ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
@@ -82,70 +302,107 @@ class ItemTile extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _showContextMenu(
-    BuildContext context,
-    WidgetRef ref,
-    List<Adventurer> others,
-  ) {
-    final notifier = ref.read(adventurerProvider(adventurerId).notifier);
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+class _PriceChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _PriceChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value == 'X' || value == 'x' ? 'varies' : '${value}g',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AbilityRow extends StatelessWidget {
+  final String token;
+  final ItemAbility? ability;
+
+  const _AbilityRow({required this.token, required this.ability});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            token,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          if (ability != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.only(top: 2),
               child: Text(
-                item.name,
-                style: Theme.of(ctx).textTheme.titleMedium,
+                ability!.description,
+                style: TextStyle(fontSize: 11, color: Colors.grey[400]),
               ),
             ),
-            if (others.isNotEmpty) ...[
-              const Divider(height: 0),
-              ...others.map(
-                (target) => ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text('Give to ${target.name}'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    final ok = fromGear
-                        ? notifier.giveGearItem(slotIndex, target.id)
-                        : notifier.givePackItem(slotIndex, target.id);
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("${target.name}'s pack is full."),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ],
-            // Innate items cannot be freely removed — only armour can displace them.
-            if (!item.isInnate) ...[
-              const Divider(height: 0),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Color(0xFFC62828),
-                ),
-                title: const Text('Remove'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  if (fromGear) {
-                    notifier.setGearSlot(slotIndex, null);
-                  } else {
-                    notifier.setPackSlot(slotIndex, null);
-                  }
-                },
-              ),
-            ],
-            const SizedBox(height: 8),
-          ],
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _InfoChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, color: color),
       ),
     );
   }
@@ -177,4 +434,8 @@ class _RarityBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on BuildContext {
+  TextTheme get textTheme => Theme.of(this).textTheme;
 }

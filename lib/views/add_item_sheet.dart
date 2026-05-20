@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/enums.dart';
 import '../models/equipment_data.dart';
 import '../models/equipment_item.dart';
+import '../models/item_abilities.dart';
 import '../widgets/item_tile.dart';
 
 Future<EquipmentItem?> showAddItemSheet(
@@ -133,7 +134,7 @@ class _CatalogView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Text(
-            forGear ? 'Add Gear Item' : 'Add Pack Item',
+            forGear ? 'Add Gear Item' : 'Add Inventory Item',
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -286,7 +287,27 @@ class _CustomItemFormState extends State<_CustomItemForm> {
   int _slots = 1;
   bool _isInnate = false;
 
+  // 0 = no combat stat; 1–5 = Combat N
+  int _combatDice = 0;
+  // boolean abilities that are toggled on
+  final Set<String> _boolAbilities = {};
+  // numeric abilities: keyword → value (0 = off)
+  final Map<String, int> _numericAbilities = {};
+
   int get _maxSlots => widget.forGear ? 2 : 4;
+
+  String get _builtDescription {
+    final parts = <String>[];
+    if (_combatDice > 0) parts.add('Combat $_combatDice');
+    for (final name in kFormBooleanAbilities) {
+      if (_boolAbilities.contains(name)) parts.add(name);
+    }
+    for (final name in kFormNumericAbilities) {
+      final v = _numericAbilities[name] ?? 0;
+      if (v > 0) parts.add('$name $v');
+    }
+    return parts.join(', ');
+  }
 
   @override
   void dispose() {
@@ -323,8 +344,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
-                decoration:
-                    const InputDecoration(labelText: 'Item name'),
+                decoration: const InputDecoration(labelText: 'Item name'),
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -337,12 +357,10 @@ class _CustomItemFormState extends State<_CustomItemForm> {
                   isExpanded: true,
                   underline: const SizedBox(),
                   items: ItemColor.values
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(_colorLabel(c)),
-                        ),
-                      )
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(_colorLabel(c)),
+                          ))
                       .toList(),
                   onChanged: (v) => setState(() => _color = v!),
                 ),
@@ -355,12 +373,10 @@ class _CustomItemFormState extends State<_CustomItemForm> {
                   isExpanded: true,
                   underline: const SizedBox(),
                   items: Rarity.values
-                      .map(
-                        (r) => DropdownMenuItem(
-                          value: r,
-                          child: Text(_rarityLabel(r)),
-                        ),
-                      )
+                      .map((r) => DropdownMenuItem(
+                            value: r,
+                            child: Text(_rarityLabel(r)),
+                          ))
                       .toList(),
                   onChanged: (v) => setState(() => _rarity = v!),
                 ),
@@ -379,8 +395,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
                       max: _maxSlots.toDouble(),
                       divisions: _maxSlots - 1,
                       label: '$_slots',
-                      onChanged: (v) =>
-                          setState(() => _slots = v.round()),
+                      onChanged: (v) => setState(() => _slots = v.round()),
                     ),
                   ),
                 ],
@@ -388,12 +403,136 @@ class _CustomItemFormState extends State<_CustomItemForm> {
               if (widget.forGear)
                 SwitchListTile(
                   title: const Text('Innate item'),
-                  subtitle:
-                      const Text('Can only be displaced by armour'),
+                  subtitle: const Text('Can only be displaced by armour'),
                   value: _isInnate,
                   onChanged: (v) => setState(() => _isInnate = v),
                   contentPadding: EdgeInsets.zero,
                 ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              // ── Combat dice ─────────────────────────────────────────────
+              Text(
+                'Combat Dice',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                kAbilityByKeyword['Combat']!.description,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _StepButton(
+                    icon: Icons.remove,
+                    onPressed: _combatDice > 0
+                        ? () => setState(() => _combatDice--)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _combatDice == 0 ? 'None' : '$_combatDice',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(width: 12),
+                  _StepButton(
+                    icon: Icons.add,
+                    onPressed: _combatDice < 5
+                        ? () => setState(() => _combatDice++)
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // ── Boolean abilities ────────────────────────────────────────
+              Text(
+                'Abilities',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: kFormBooleanAbilities.map((name) {
+                  final selected = _boolAbilities.contains(name);
+                  return FilterChip(
+                    label: Text(name, style: const TextStyle(fontSize: 12)),
+                    selected: selected,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: kAbilityByKeyword[name]?.description,
+                    onSelected: (_) => setState(() {
+                      if (selected) {
+                        _boolAbilities.remove(name);
+                      } else {
+                        _boolAbilities.add(name);
+                      }
+                    }),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              // ── Numeric abilities ────────────────────────────────────────
+              Text(
+                'Numeric Abilities',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              ...kFormNumericAbilities.map((name) {
+                final value = _numericAbilities[name] ?? 0;
+                final ability = kAbilityByKeyword[name];
+                final max = ability?.maxValue ?? 5;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            if (ability != null)
+                              Text(
+                                ability.description,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      _StepButton(
+                        icon: Icons.remove,
+                        onPressed: value > 0
+                            ? () => setState(
+                                () => _numericAbilities[name] = value - 1)
+                            : null,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          value == 0 ? '—' : '$value',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ),
+                      _StepButton(
+                        icon: Icons.add,
+                        onPressed: value < max
+                            ? () => setState(
+                                () => _numericAbilities[name] = value + 1)
+                            : null,
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _submit,
@@ -417,6 +556,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
         rarity: _rarity,
         slots: _slots,
         isInnate: _isInnate,
+        description: _builtDescription,
       ),
     );
   }
@@ -435,6 +575,26 @@ class _CustomItemFormState extends State<_CustomItemForm> {
         Rarity.rare => 'Rare',
         Rarity.exclusive => 'Exclusive',
       };
+}
+
+class _StepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _StepButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: IconButton.outlined(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, size: 14),
+        onPressed: onPressed,
+      ),
+    );
+  }
 }
 
 String _generateId() {

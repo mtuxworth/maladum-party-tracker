@@ -49,9 +49,9 @@ void main() {
   });
 
   group('Adventurer slot sizes', () {
-    test('gearSlots initialises to 4 nulls', () {
+    test('gearSlots initialises to maxGearSlots nulls', () {
       final a = _makeAdventurer();
-      expect(a.gearSlots.length, equals(4));
+      expect(a.gearSlots.length, equals(maxGearSlots));
       expect(a.gearSlots.every((s) => s == null), isTrue);
     });
 
@@ -149,7 +149,7 @@ void main() {
       expect(restored.gearSlots[0]?.id, equals('sw1'));
       expect(restored.gearSlots[0]?.name, equals('Iron Sword'));
       expect(restored.packSlots[3]?.id, equals('gm1'));
-      expect(restored.gearSlots.length, equals(4));
+      expect(restored.gearSlots.length, equals(maxGearSlots));
       expect(restored.packSlots.length, equals(10));
     });
 

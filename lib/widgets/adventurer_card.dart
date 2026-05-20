@@ -59,7 +59,7 @@ class AdventurerCard extends ConsumerWidget {
             GearSlotsGrid(adventurerId: adventurerId),
             const SizedBox(height: 16),
             Text(
-              'Pack',
+              'Inventory',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),

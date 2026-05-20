@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../models/equipment_item.dart';
 import '../providers/adventurer_notifier.dart';
@@ -8,7 +7,7 @@ import '../providers/providers.dart';
 import '../views/add_item_sheet.dart';
 import 'item_tile.dart';
 
-const double _kTileExtent = 80;
+const double _kSlotHeight = 80;
 
 class GearSlotsGrid extends ConsumerWidget {
   final String adventurerId;
@@ -22,17 +21,19 @@ class GearSlotsGrid extends ConsumerWidget {
     );
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
-    return StaggeredGrid.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 6,
-      crossAxisSpacing: 6,
-      children: List.generate(maxGearSlots, (i) {
-        final item = gearSlots[i];
-        // 2-slot items span both columns; 1-slot items take one column.
-        final span = (item?.slots ?? 1).clamp(1, 2);
-        return StaggeredGridTile.extent(
-          crossAxisCellCount: span,
-          mainAxisExtent: _kTileExtent,
+    // Skip continuation indices (same item stored at consecutive slots for
+    // multi-slot items). Use flex = item.slots so a 2-slot item fills the row.
+    final children = <Widget>[];
+    String? lastItemId;
+    for (int i = 0; i < maxGearSlots; i++) {
+      final item = gearSlots[i];
+      if (item != null && item.id == lastItemId) continue;
+      lastItemId = item?.id;
+      final flex = item?.slots ?? 1;
+      children.add(Expanded(
+        flex: flex,
+        child: Padding(
+          padding: EdgeInsets.only(left: children.isEmpty ? 0 : 6),
           child: item != null
               ? ItemTile(
                   item: item,
@@ -43,8 +44,16 @@ class GearSlotsGrid extends ConsumerWidget {
               : _EmptyGearSlot(
                   onTap: () => _addItem(context, notifier),
                 ),
-        );
-      }),
+        ),
+      ));
+    }
+
+    return SizedBox(
+      height: _kSlotHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 
