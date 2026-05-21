@@ -1,6 +1,7 @@
 import 'enums.dart';
 
-const int maxGearSlots = 2;
+// 2 visual gear slots, each representing 2 actual slot-units (total 4).
+const int maxGearSlots = 4;
 const int maxPackSlots = 10;
 
 class EquipmentItem {

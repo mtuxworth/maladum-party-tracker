@@ -22,24 +22,32 @@ class GearSlotsGrid extends ConsumerWidget {
     );
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
-    // Skip continuation indices (same item stored at consecutive slots for
-    // multi-slot items). Use flex = item.slots so a 2-slot item fills the row.
+    // Each visual gear slot = 2 actual slot-units. Items are stored in
+    // gear-rounded multiples of 2, so we step by that rounded count and
+    // always produce exactly 2 visual cells (flex 1 each).
     final children = <Widget>[];
-    String? lastItemId;
-    for (int i = 0; i < maxGearSlots; i++) {
-      final item = gearSlots[i];
-      if (item != null && item.id == lastItemId) continue;
-      lastItemId = item?.id;
-      final flex = item?.slots ?? 1;
+    int i = 0;
+    while (i < maxGearSlots) {
+      final slotStart = i;
+      final item = gearSlots[slotStart];
+      // Gear-rounded width: round item.slots up to nearest even.
+      final gearN = item != null ? ((item.slots + 1) ~/ 2) * 2 : 2;
+      // Visual flex: how many visual slots this cell occupies.
+      final visualFlex = gearN ~/ 2;
+      i += gearN;
+
       children.add(Expanded(
-        flex: flex,
+        flex: visualFlex,
         child: Padding(
           padding: EdgeInsets.only(left: children.isEmpty ? 0 : 6),
           child: DragTarget<EquipmentItem>(
-            onWillAcceptWithDetails: (d) =>
-                d.data.color == ItemColor.yellow,
+            onWillAcceptWithDetails: (d) {
+              final n = ((d.data.slots + 1) ~/ 2) * 2;
+              return d.data.color == ItemColor.yellow &&
+                  slotStart + n <= maxGearSlots;
+            },
             onAcceptWithDetails: (d) {
-              final ok = notifier.swapPackToGear(d.data, i);
+              final ok = notifier.swapPackToGear(d.data, slotStart);
               if (!ok && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -55,7 +63,7 @@ class GearSlotsGrid extends ConsumerWidget {
                       item: item,
                       adventurerId: adventurerId,
                       fromGear: true,
-                      slotIndex: i,
+                      slotIndex: slotStart,
                     )
                   : _EmptyGearSlot(
                       onTap: () => _addItem(context, notifier),

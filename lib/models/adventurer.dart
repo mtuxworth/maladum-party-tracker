@@ -59,7 +59,8 @@ class Adventurer {
     final seen = <String>{};
     int total = 0;
     for (final item in gearSlots.whereType<EquipmentItem>()) {
-      if (seen.add(item.id)) total += item.slots;
+      // Each visual gear slot = 2 actual slot-units; round up to nearest even.
+      if (seen.add(item.id)) total += ((item.slots + 1) ~/ 2) * 2;
     }
     return total;
   }

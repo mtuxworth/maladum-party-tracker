@@ -159,6 +159,21 @@ class AdventurerNotifier
     return -1;
   }
 
+  // Moves a gear item to the pack. Returns false if no pack space.
+  bool unequipGearItem(int slotIndex) {
+    final item = state.gearSlots[slotIndex];
+    if (item == null) return false;
+    if (state.usedPackVolume + item.slots > maxPackSlots) return false;
+    final packIdx = _findPackSlot(item.slots);
+    if (packIdx == -1) return false;
+    _clearGearItem(slotIndex);
+    for (int d = 0; d < item.slots; d++) {
+      state.packSlots[packIdx + d] = item;
+    }
+    _emit();
+    return true;
+  }
+
   void setGearSlot(int index, EquipmentItem? item) {
     assert(index >= 0 && index < maxGearSlots);
     if (item == null) {
@@ -179,10 +194,15 @@ class AdventurerNotifier
     _emit();
   }
 
-  // Adds to gear, filling [item.slots] consecutive null slots.
+  // Rounds item.slots up to the nearest even number for gear storage.
+  // Each visual gear slot = 2 actual slot-units.
+  int _gearN(EquipmentItem item) => ((item.slots + 1) ~/ 2) * 2;
+
+  // Adds to gear, filling [_gearN] consecutive null slots.
   // Armour (yellow) may displace an innate item to the pack first.
   // Returns false if there is no room.
   bool addGearItem(EquipmentItem item) {
+    final gearN = _gearN(item);
     if (item.color == ItemColor.yellow) {
       final innateIdx =
           state.gearSlots.indexWhere((s) => s?.isInnate == true);
@@ -195,19 +215,19 @@ class AdventurerNotifier
         for (int d = 0; d < innate.slots; d++) {
           state.packSlots[packIdx + d] = innate;
         }
-        final gearIdx = _findGearSlot(item.slots);
+        final gearIdx = _findGearSlot(gearN);
         if (gearIdx == -1) return false;
-        for (int d = 0; d < item.slots; d++) {
+        for (int d = 0; d < gearN; d++) {
           state.gearSlots[gearIdx + d] = item;
         }
         _emit();
         return true;
       }
     }
-    if (state.usedGearVolume + item.slots > maxGearSlots) return false;
-    final idx = _findGearSlot(item.slots);
+    if (state.usedGearVolume + gearN > maxGearSlots) return false;
+    final idx = _findGearSlot(gearN);
     if (idx == -1) return false;
-    for (int d = 0; d < item.slots; d++) {
+    for (int d = 0; d < gearN; d++) {
       state.gearSlots[idx + d] = item;
     }
     _emit();
@@ -247,89 +267,56 @@ class AdventurerNotifier
   // If that slot is occupied the displaced item swaps into the pack.
   // Items in other gear slots are never touched.
   // Returns false if there is no pack space for the displaced item.
+  // Places a pack armour item into [targetGearSlot] (must be 0 or 2).
+  // Items displaced from the target range are returned to the pack.
+  // Uses gear-rounded slot count so each visual slot = 2 actual slot-units.
+  // Returns false if there is no pack space for any displaced item.
   bool swapPackToGear(EquipmentItem packItem, int targetGearSlot) {
     assert(targetGearSlot >= 0 && targetGearSlot < maxGearSlots);
     if (packItem.color != ItemColor.yellow) return false;
+    final gearN = _gearN(packItem);
+    if (targetGearSlot + gearN > maxGearSlots) return false;
     final packIdx = state.packSlots.indexWhere((s) => s?.id == packItem.id);
     if (packIdx == -1) return false;
 
-    // For a 1-slot pack item, place it exactly at targetGearSlot and displace
-    // only the item currently occupying that slot (if any).
-    // For a multi-slot pack item, it must start at slot 0 and displaces
-    // everything currently in gear.
-    if (packItem.slots == 1) {
-      final displaced = state.gearSlots[targetGearSlot];
+    // Collect unique items currently occupying the target gear range.
+    final displaced = <String, EquipmentItem>{};
+    for (int i = targetGearSlot; i < targetGearSlot + gearN; i++) {
+      final s = state.gearSlots[i];
+      if (s != null) displaced[s.id] = s;
+    }
 
-      if (displaced != null) {
-        // Find a home in the pack for the displaced item, pretending the pack
-        // item has already been removed.
-        final tempPack = List<EquipmentItem?>.of(state.packSlots);
-        for (int i = 0; i < maxPackSlots; i++) {
-          if (tempPack[i]?.id == packItem.id) tempPack[i] = null;
+    // Simulate pack with the incoming item removed; find space for each
+    // displaced item before committing any real mutation.
+    final tempPack = List<EquipmentItem?>.of(state.packSlots);
+    for (int i = 0; i < maxPackSlots; i++) {
+      if (tempPack[i]?.id == packItem.id) tempPack[i] = null;
+    }
+    for (final d in displaced.values) {
+      int found = -1;
+      for (int i = 0; i <= maxPackSlots - d.slots; i++) {
+        if (List.generate(d.slots, (j) => tempPack[i + j])
+            .every((s) => s == null)) {
+          found = i;
+          break;
         }
-        int packStart = -1;
-        for (int i = 0; i <= maxPackSlots - displaced.slots; i++) {
-          if (List.generate(displaced.slots, (d) => tempPack[i + d])
-              .every((s) => s == null)) {
-            packStart = i;
-            break;
-          }
-        }
-        if (packStart == -1) return false;
-
-        // Clear only the displaced item's gear indices.
-        for (int i = 0; i < maxGearSlots; i++) {
-          if (state.gearSlots[i]?.id == displaced.id) {
-            state.gearSlots[i] = null;
-          }
-        }
-        // Clear the pack item FIRST so _clearPackItem reads the correct id
-        // before we overwrite that slot with the displaced item.
-        _clearPackItem(packIdx);
-        // Move displaced item into the pack.
-        for (int d = 0; d < displaced.slots; d++) {
-          state.packSlots[packStart + d] = displaced;
-        }
-        state.gearSlots[targetGearSlot] = packItem;
-      } else {
-        _clearPackItem(packIdx);
-        state.gearSlots[targetGearSlot] = packItem;
       }
-    } else {
-      // Multi-slot: fill from slot 0, displacing all current gear items.
-      if (packItem.slots > maxGearSlots) return false;
-
-      // Collect unique displaced items and simulate finding pack space.
-      final displaced = <String, EquipmentItem>{};
-      for (final s in state.gearSlots) {
-        if (s != null) displaced[s.id] = s;
+      if (found == -1) return false;
+      for (int j = 0; j < d.slots; j++) {
+        tempPack[found + j] = d;
       }
+    }
 
-      final tempPack = List<EquipmentItem?>.of(state.packSlots);
-      for (int i = 0; i < maxPackSlots; i++) {
-        if (tempPack[i]?.id == packItem.id) tempPack[i] = null;
-      }
-      for (final d in displaced.values) {
-        int found = -1;
-        for (int i = 0; i <= maxPackSlots - d.slots; i++) {
-          if (List.generate(d.slots, (j) => tempPack[i + j])
-              .every((s) => s == null)) {
-            found = i;
-            break;
-          }
-        }
-        if (found == -1) return false;
-        for (int j = 0; j < d.slots; j++) { tempPack[found + j] = d; }
-      }
-
-      // Apply: clear pack item, clear gear, write simulated pack state.
-      _clearPackItem(packIdx);
-      for (int i = 0; i < maxGearSlots; i++) { state.gearSlots[i] = null; }
-      for (int i = 0; i < maxPackSlots; i++) { state.packSlots[i] = tempPack[i]; }
-
-      for (int d = 0; d < packItem.slots; d++) {
-        state.gearSlots[d] = packItem;
-      }
+    // Apply: write simulated pack (removes incoming, adds displaced),
+    // clear displaced from gear, write incoming item into gear.
+    for (int i = 0; i < maxPackSlots; i++) {
+      state.packSlots[i] = tempPack[i];
+    }
+    for (int i = targetGearSlot; i < targetGearSlot + gearN; i++) {
+      state.gearSlots[i] = null;
+    }
+    for (int d = 0; d < gearN; d++) {
+      state.gearSlots[targetGearSlot + d] = packItem;
     }
 
     _emit();

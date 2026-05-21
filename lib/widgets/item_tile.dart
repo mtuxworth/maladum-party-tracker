@@ -216,6 +216,25 @@ void showItemDetailSheet(
               ),
               const Divider(height: 1),
             ],
+            if (fromGear && !item.isInnate) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: const Text('Unequip to inventory'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final ok = notifier.unequipGearItem(slotIndex);
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Not enough inventory space.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(height: 1),
+            ],
             if (!item.isInnate)
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -223,7 +242,7 @@ void showItemDetailSheet(
                   Icons.delete_outline,
                   color: Color(0xFFC62828),
                 ),
-                title: const Text('Remove'),
+                title: const Text('Drop item'),
                 onTap: () {
                   Navigator.pop(ctx);
                   if (fromGear) {

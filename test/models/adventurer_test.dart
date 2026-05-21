@@ -79,15 +79,20 @@ void main() {
 
     test('usedGearVolume sums item slots correctly', () {
       final a = _makeAdventurer();
+      // slots:2 item in visual slot 0 (actual indices 0–1).
       a.gearSlots[0] = EquipmentItem(
         id: '1', name: 'Sword', color: ItemColor.blue,
-        rarity: Rarity.common, slots: 1,
+        rarity: Rarity.common, slots: 2,
       );
-      a.gearSlots[1] = EquipmentItem(
+      a.gearSlots[1] = a.gearSlots[0];
+      // slots:2 item in visual slot 1 (actual indices 2–3).
+      a.gearSlots[2] = EquipmentItem(
         id: '2', name: 'Shield', color: ItemColor.yellow,
         rarity: Rarity.uncommon, slots: 2,
       );
-      expect(a.usedGearVolume, equals(3));
+      a.gearSlots[3] = a.gearSlots[2];
+      // Each item gear-rounds to 2, total = 4 (gear full).
+      expect(a.usedGearVolume, equals(4));
     });
 
     test('usedPackVolume sums item slots correctly', () {
