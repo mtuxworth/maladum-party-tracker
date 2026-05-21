@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/enums.dart';
 import '../models/equipment_item.dart';
 import '../providers/adventurer_notifier.dart';
 import '../providers/providers.dart';
@@ -34,16 +35,54 @@ class GearSlotsGrid extends ConsumerWidget {
         flex: flex,
         child: Padding(
           padding: EdgeInsets.only(left: children.isEmpty ? 0 : 6),
-          child: item != null
-              ? ItemTile(
-                  item: item,
-                  adventurerId: adventurerId,
-                  fromGear: true,
-                  slotIndex: i,
-                )
-              : _EmptyGearSlot(
-                  onTap: () => _addItem(context, notifier),
-                ),
+          child: DragTarget<EquipmentItem>(
+            onWillAcceptWithDetails: (d) =>
+                d.data.color == ItemColor.yellow,
+            onAcceptWithDetails: (d) {
+              final ok = notifier.swapPackToGear(d.data, i);
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No inventory space for the swap.'),
+                  ),
+                );
+              }
+            },
+            builder: (ctx, candidates, _) {
+              final hovering = candidates.isNotEmpty;
+              Widget cell = item != null
+                  ? ItemTile(
+                      item: item,
+                      adventurerId: adventurerId,
+                      fromGear: true,
+                      slotIndex: i,
+                    )
+                  : _EmptyGearSlot(
+                      onTap: () => _addItem(context, notifier),
+                    );
+              if (hovering) {
+                cell = Stack(
+                  children: [
+                    cell,
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFF9A825)
+                              .withValues(alpha: 0.25),
+                          border: Border.all(
+                            color: const Color(0xFFF9A825),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return cell;
+            },
+          ),
         ),
       ));
     }

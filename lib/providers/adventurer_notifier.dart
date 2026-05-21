@@ -243,6 +243,99 @@ class AdventurerNotifier
     return true;
   }
 
+  // Moves an armour item from the pack into [targetGearSlot].
+  // If that slot is occupied the displaced item swaps into the pack.
+  // Items in other gear slots are never touched.
+  // Returns false if there is no pack space for the displaced item.
+  bool swapPackToGear(EquipmentItem packItem, int targetGearSlot) {
+    assert(targetGearSlot >= 0 && targetGearSlot < maxGearSlots);
+    if (packItem.color != ItemColor.yellow) return false;
+    final packIdx = state.packSlots.indexWhere((s) => s?.id == packItem.id);
+    if (packIdx == -1) return false;
+
+    // For a 1-slot pack item, place it exactly at targetGearSlot and displace
+    // only the item currently occupying that slot (if any).
+    // For a multi-slot pack item, it must start at slot 0 and displaces
+    // everything currently in gear.
+    if (packItem.slots == 1) {
+      final displaced = state.gearSlots[targetGearSlot];
+
+      if (displaced != null) {
+        // Find a home in the pack for the displaced item, pretending the pack
+        // item has already been removed.
+        final tempPack = List<EquipmentItem?>.of(state.packSlots);
+        for (int i = 0; i < maxPackSlots; i++) {
+          if (tempPack[i]?.id == packItem.id) tempPack[i] = null;
+        }
+        int packStart = -1;
+        for (int i = 0; i <= maxPackSlots - displaced.slots; i++) {
+          if (List.generate(displaced.slots, (d) => tempPack[i + d])
+              .every((s) => s == null)) {
+            packStart = i;
+            break;
+          }
+        }
+        if (packStart == -1) return false;
+
+        // Clear only the displaced item's gear indices.
+        for (int i = 0; i < maxGearSlots; i++) {
+          if (state.gearSlots[i]?.id == displaced.id) {
+            state.gearSlots[i] = null;
+          }
+        }
+        // Clear the pack item FIRST so _clearPackItem reads the correct id
+        // before we overwrite that slot with the displaced item.
+        _clearPackItem(packIdx);
+        // Move displaced item into the pack.
+        for (int d = 0; d < displaced.slots; d++) {
+          state.packSlots[packStart + d] = displaced;
+        }
+        state.gearSlots[targetGearSlot] = packItem;
+      } else {
+        _clearPackItem(packIdx);
+        state.gearSlots[targetGearSlot] = packItem;
+      }
+    } else {
+      // Multi-slot: fill from slot 0, displacing all current gear items.
+      if (packItem.slots > maxGearSlots) return false;
+
+      // Collect unique displaced items and simulate finding pack space.
+      final displaced = <String, EquipmentItem>{};
+      for (final s in state.gearSlots) {
+        if (s != null) displaced[s.id] = s;
+      }
+
+      final tempPack = List<EquipmentItem?>.of(state.packSlots);
+      for (int i = 0; i < maxPackSlots; i++) {
+        if (tempPack[i]?.id == packItem.id) tempPack[i] = null;
+      }
+      for (final d in displaced.values) {
+        int found = -1;
+        for (int i = 0; i <= maxPackSlots - d.slots; i++) {
+          if (List.generate(d.slots, (j) => tempPack[i + j])
+              .every((s) => s == null)) {
+            found = i;
+            break;
+          }
+        }
+        if (found == -1) return false;
+        for (int j = 0; j < d.slots; j++) { tempPack[found + j] = d; }
+      }
+
+      // Apply: clear pack item, clear gear, write simulated pack state.
+      _clearPackItem(packIdx);
+      for (int i = 0; i < maxGearSlots; i++) { state.gearSlots[i] = null; }
+      for (int i = 0; i < maxPackSlots; i++) { state.packSlots[i] = tempPack[i]; }
+
+      for (int d = 0; d < packItem.slots; d++) {
+        state.gearSlots[d] = packItem;
+      }
+    }
+
+    _emit();
+    return true;
+  }
+
   // Moves a pack item to another adventurer's pack. Returns false if no room.
   bool givePackItem(int slotIndex, String toAdventurerId) {
     final item = state.packSlots[slotIndex];

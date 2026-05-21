@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/enums.dart';
 import '../models/equipment_item.dart';
 import '../providers/adventurer_notifier.dart';
 import '../providers/providers.dart';
@@ -31,19 +32,30 @@ class InventoryPackGrid extends ConsumerWidget {
       if (item != null && item.id == lastItemId) continue;
       lastItemId = item?.id;
       final flex = item?.slots ?? 1;
+      Widget cellChild;
+      if (item != null) {
+        final tile = _CompactItemTile(
+          item: item,
+          adventurerId: adventurerId,
+          slotIndex: i,
+        );
+        // Only armour (yellow) items are draggable to the gear zone.
+        cellChild = item.color == ItemColor.yellow
+            ? Draggable<EquipmentItem>(
+                data: item,
+                feedback: _DragFeedback(item: item),
+                childWhenDragging: Opacity(opacity: 0.3, child: tile),
+                child: tile,
+              )
+            : tile;
+      } else {
+        cellChild = _EmptyPackSlot(onTap: () => _addItem(context, notifier));
+      }
       children.add(Expanded(
         flex: flex,
         child: Padding(
           padding: EdgeInsets.only(left: children.isEmpty ? 0 : 4),
-          child: item != null
-              ? _CompactItemTile(
-                  item: item,
-                  adventurerId: adventurerId,
-                  slotIndex: i,
-                )
-              : _EmptyPackSlot(
-                  onTap: () => _addItem(context, notifier),
-                ),
+          child: cellChild,
         ),
       ));
     }
@@ -128,6 +140,42 @@ class _CompactItemTile extends ConsumerWidget {
     );
   }
 
+}
+
+// Floating tile shown under the pointer while dragging.
+class _DragFeedback extends StatelessWidget {
+  final EquipmentItem item;
+
+  const _DragFeedback({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = kItemBorderColors[item.color]!;
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 60,
+        height: _kSlotSize,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: borderColor, width: 2),
+          color: borderColor.withValues(alpha: 0.5),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Text(
+              item.name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 9, color: Colors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyPackSlot extends StatelessWidget {

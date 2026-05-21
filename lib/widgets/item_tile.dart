@@ -75,6 +75,17 @@ void showItemDetailSheet(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // ── Close button ──────────────────────────────────────────
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+              const SizedBox(height: 4),
               // ── Detail header ──────────────────────────────────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
