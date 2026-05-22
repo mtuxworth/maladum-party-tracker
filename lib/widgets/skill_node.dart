@@ -29,20 +29,26 @@ Color skillCategoryColor(String category) => switch (category) {
       _ => const Color(0xFF2C2C2C),
     };
 
-// One card per unique skill name, showing tier pegs and current description.
+// One card per unique skill name, showing tier dots, current description,
+// and XP-cost buttons to unlock/upgrade or refund the highest owned tier.
 class SkillGroup extends StatelessWidget {
   final List<Skill> tiers; // sorted tier 1 → 3
   final Set<String> ownedSkillIds;
-  final int skillPegs;
+  // Remaining XP the adventurer can still spend (xpPegs - skills already owned).
+  final int xpAvailable;
+  // 0-indexed rank (level 1 = rank 0). Tier N requires rank >= N - 1.
+  final int currentRank;
   final void Function(String skillId) onUnlock;
-  final VoidCallback onUse;
+  // Called with the highest currently-owned tier's id to refund 1 XP.
+  final void Function(String skillId) onRemove;
 
   const SkillGroup({
     required this.tiers,
     required this.ownedSkillIds,
-    required this.skillPegs,
+    required this.xpAvailable,
+    required this.currentRank,
     required this.onUnlock,
-    required this.onUse,
+    required this.onRemove,
     super.key,
   });
 
@@ -57,9 +63,15 @@ class SkillGroup extends StatelessWidget {
     final displaySkill = isOwned
         ? tiers.firstWhere((s) => s.tier == currentTier)
         : tiers.first;
+    final highestOwned = isOwned
+        ? tiers.firstWhere((s) => s.tier == currentTier)
+        : null;
     final nextSkill =
         tiers.where((s) => s.tier == currentTier + 1).firstOrNull;
-    final canUnlock = nextSkill != null;
+    // Tier N requires character level N (rank N-1).
+    final levelGated =
+        nextSkill != null && nextSkill.tier > currentRank + 1;
+    final canUnlock = nextSkill != null && xpAvailable > 0 && !levelGated;
 
     final category = tiers.first.category;
     final bgColor = skillCategoryColor(category);
@@ -90,6 +102,7 @@ class SkillGroup extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Tier dots: filled = owned, empty = not yet unlocked.
                 Row(
                   children: List.generate(tiers.length, (i) {
                     final owned = (i + 1) <= currentTier;
@@ -119,23 +132,25 @@ class SkillGroup extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (isOwned || canUnlock) ...[
+            if (isOwned || nextSkill != null) ...[
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (isOwned)
                     _CardButton(
-                      label: 'Use',
-                      onPressed: skillPegs > 0 ? onUse : null,
+                      label: '− Refund',
+                      onPressed: () => onRemove(highestOwned!.id),
                     ),
-                  if (isOwned && canUnlock) const SizedBox(width: 8),
-                  if (canUnlock)
+                  if (isOwned && nextSkill != null) const SizedBox(width: 8),
+                  if (nextSkill != null)
                     _CardButton(
-                      label: isOwned
-                          ? 'Upgrade to T${currentTier + 1}'
-                          : 'Unlock',
-                      onPressed: () => onUnlock(nextSkill.id),
+                      label: levelGated
+                          ? 'Requires Level ${nextSkill.tier}'
+                          : isOwned
+                              ? 'Upgrade T${currentTier + 1} (1 XP)'
+                              : 'Unlock (1 XP)',
+                      onPressed: canUnlock ? () => onUnlock(nextSkill.id) : null,
                     ),
                 ],
               ),

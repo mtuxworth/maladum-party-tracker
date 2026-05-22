@@ -32,11 +32,6 @@ class StatGrid extends StatelessWidget {
             statType: StatType.skill,
             label: 'Skill',
           ),
-          StatCounter(
-            adventurerId: adventurerId,
-            statType: StatType.action,
-            label: 'Action',
-          ),
         ],
       ),
     );

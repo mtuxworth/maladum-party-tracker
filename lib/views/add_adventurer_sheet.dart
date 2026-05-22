@@ -7,8 +7,6 @@ import '../models/adventurer_templates.dart';
 import '../models/character_class.dart';
 import '../models/character_classes.dart';
 import '../models/maladum_stat.dart';
-import '../models/skill.dart';
-import '../models/skill_data.dart';
 import '../providers/providers.dart';
 
 void showAddAdventurerSheet(BuildContext context) {
@@ -30,36 +28,13 @@ class _AddAdventurerSheet extends ConsumerStatefulWidget {
 class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
   AdventurerTemplate? _template;
   CharacterClass? _charClass;
-  final Set<String> _pickedSkillIds = {};
 
-  int get _maxStartingSkills => _template?.skillStart ?? 0;
-
-  List<Skill> get _availableStartingSkills {
-    final cls = _charClass;
-    if (cls == null) return [];
-    return kAllSkills
-        .where((s) => s.tier == 1 && cls.skillNames.contains(s.name))
-        .toList();
-  }
-
-  bool get _canSubmit =>
-      _template != null && _charClass != null;
+  bool get _canSubmit => _template != null && _charClass != null;
 
   void _selectTemplate(AdventurerTemplate t) {
     setState(() {
       _template = t;
       _charClass = null;
-      _pickedSkillIds.clear();
-    });
-  }
-
-  void _toggleSkill(String id) {
-    setState(() {
-      if (_pickedSkillIds.contains(id)) {
-        _pickedSkillIds.remove(id);
-      } else if (_pickedSkillIds.length < _maxStartingSkills) {
-        _pickedSkillIds.add(id);
-      }
     });
   }
 
@@ -70,18 +45,26 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
       name: tmpl.name,
       templateId: tmpl.id,
       characterClass: cls.id,
-      health:
-          MaladumStat(starting: tmpl.healthStart, potential: tmpl.healthPotential),
-      magic:
-          MaladumStat(starting: tmpl.magicStart, potential: tmpl.magicPotential),
-      skill:
-          MaladumStat(starting: tmpl.skillStart, potential: tmpl.skillPotential),
-      action:
-          MaladumStat(starting: tmpl.actionStart, potential: tmpl.actionPotential),
+      health: MaladumStat(
+        starting: tmpl.healthStart,
+        potential: tmpl.healthPotential,
+      ),
+      magic: MaladumStat(
+        starting: tmpl.magicStart,
+        potential: tmpl.magicPotential,
+      ),
+      skill: MaladumStat(
+        starting: tmpl.skillStart,
+        potential: tmpl.skillPotential,
+      ),
+      action: MaladumStat(
+        starting: tmpl.actionStart,
+        potential: tmpl.actionPotential,
+      ),
       xpPegs: tmpl.startingXp,
       skillPegs: tmpl.skillStart,
       rankXpCosts: List.of(tmpl.rankXpCosts),
-      ownedSkillIds: _pickedSkillIds.toList(),
+      ownedSkillIds: [],
     );
     ref.read(partyProvider.notifier).addAdventurer(adventurer);
     Navigator.pop(context);
@@ -90,7 +73,6 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final skills = _availableStartingSkills;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -113,8 +95,7 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
                   const Spacer(),
                   FilledButton(
                     onPressed: _canSubmit ? _submit : null,
-                    child:
-                        Text('Add ${_template?.name ?? 'Adventurer'}'),
+                    child: Text('Add ${_template?.name ?? 'Adventurer'}'),
                   ),
                 ],
               ),
@@ -158,46 +139,20 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
                             '${c.magicPegSlots > 0 ? ' · ${c.magicPegSlots} magic pegs' : ''}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          onTap: () => setState(() {
-                            _charClass = c;
-                            _pickedSkillIds.clear();
-                          }),
+                          onTap: () =>
+                              setState(() => _charClass = c),
                         );
                       },
                     ),
                   ],
-                  if (_charClass != null &&
-                      _maxStartingSkills > 0 &&
-                      skills.isNotEmpty) ...[
+                  if (_template != null && _charClass != null) ...[
                     const SizedBox(height: 20),
-                    _SectionHeader(
-                      'Starting Skills'
-                      ' (${_pickedSkillIds.length}/$_maxStartingSkills)',
-                    ),
+                    _SectionHeader('Starting XP'),
                     const SizedBox(height: 4),
                     Text(
-                      'Choose up to $_maxStartingSkills Tier-1 skills.',
+                      '${_template!.name} starts with ${_template!.startingXp} XP '
+                      'to spend on skills in the skill tree.',
                       style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    ...skills.map(
-                      (s) => CheckboxListTile(
-                        dense: true,
-                        value: _pickedSkillIds.contains(s.id),
-                        title: Text('${s.name} (${s.category})'),
-                        subtitle: Text(
-                          s.description,
-                          style: Theme.of(context).textTheme.bodySmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onChanged:
-                            _pickedSkillIds.contains(s.id) ||
-                                    _pickedSkillIds.length <
-                                        _maxStartingSkills
-                                ? (_) => _toggleSkill(s.id)
-                                : null,
-                      ),
                     ),
                   ],
                   const SizedBox(height: 24),

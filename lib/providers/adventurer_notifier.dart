@@ -64,13 +64,20 @@ class AdventurerNotifier
   // ─── Action Points ───────────────────────────────────────────────────────
 
   void toggleAP(int index) {
-    assert(index == 0 || index == 1);
+    if (index < 0) return;
+    // Extend apSlots if action.starting grew via level-up after creation.
+    if (state.apSlots.length <= index) {
+      state.apSlots = [
+        ...state.apSlots,
+        ...List.filled(index - state.apSlots.length + 1, false),
+      ];
+    }
     state.apSlots[index] = !state.apSlots[index];
     _emit();
   }
 
   void resetAP() {
-    state.apSlots = [false, false];
+    state.apSlots = List.filled(state.action.starting, false);
     _emit();
   }
 
@@ -110,10 +117,24 @@ class AdventurerNotifier
     return true;
   }
 
-  // Called from SkillNode UI and from the rank-up dialog in Phase 8.
+  // Unlocks a skill tier, spending 1 XP.
+  // Blocked if no XP is available or the tier exceeds the character's level.
   void unlockSkill(String skillId) {
     if (state.ownedSkillIds.contains(skillId)) return;
+    if (state.ownedSkillIds.length >= state.xpPegs) return;
+    // Import-free tier lookup: tier is encoded as the trailing digit in the id.
+    final tier = int.tryParse(skillId.split('_').last) ?? 1;
+    if (tier > state.currentRank + 1) return;
     state.ownedSkillIds = [...state.ownedSkillIds, skillId];
+    _emit();
+  }
+
+  // Removes the given skill tier, refunding 1 XP. The caller is responsible
+  // for only offering this on the highest owned tier in a skill group.
+  void removeSkill(String skillId) {
+    if (!state.ownedSkillIds.contains(skillId)) return;
+    state.ownedSkillIds =
+        state.ownedSkillIds.where((id) => id != skillId).toList();
     _emit();
   }
 

@@ -37,6 +37,7 @@ class PartyNotifier extends Notifier<PartyState> {
     if (state.adventurers.length >= maxPartySize) return;
     state = PartyState(
       name: state.name,
+      guilders: state.guilders,
       adventurers: [...state.adventurers, adventurer],
     );
     _save();
@@ -45,6 +46,7 @@ class PartyNotifier extends Notifier<PartyState> {
   void removeAdventurer(String id) {
     state = PartyState(
       name: state.name,
+      guilders: state.guilders,
       adventurers: state.adventurers.where((a) => a.id != id).toList(),
     );
     _save();
@@ -52,7 +54,11 @@ class PartyNotifier extends Notifier<PartyState> {
 
   void renameParty(String name) {
     final oldName = state.name;
-    state = PartyState(name: name, adventurers: state.adventurers);
+    state = PartyState(
+      name: name,
+      guilders: state.guilders,
+      adventurers: state.adventurers,
+    );
     _save();
     // Remove the stale key so it doesn't appear in the party list.
     if (oldName != name) {
@@ -82,10 +88,20 @@ class PartyNotifier extends Notifier<PartyState> {
       ..sort();
   }
 
+  void setGuilders(int amount) {
+    state = PartyState(
+      name: state.name,
+      guilders: amount.clamp(0, 999999),
+      adventurers: state.adventurers,
+    );
+    _save();
+  }
+
   // Called by AdventurerNotifier after every in-game mutation.
   void updateAdventurer(Adventurer updated) {
     state = PartyState(
       name: state.name,
+      guilders: state.guilders,
       adventurers: state.adventurers
           .map((a) => a.id == updated.id ? updated : a)
           .toList(),
@@ -99,11 +115,15 @@ class PartyNotifier extends Notifier<PartyState> {
   void endQuestReset() {
     final updated = state.adventurers.map((a) {
       a.statusSlots = List.filled(3, null);
-      a.apSlots = [false, false];
+      a.apSlots = List.filled(a.action.starting, false);
       a.magic.current = (a.magic.current + 2).clamp(0, a.magic.potential);
       return Adventurer.clone(a);
     }).toList();
-    state = PartyState(name: state.name, adventurers: updated);
+    state = PartyState(
+      name: state.name,
+      guilders: state.guilders,
+      adventurers: updated,
+    );
     _save();
   }
 

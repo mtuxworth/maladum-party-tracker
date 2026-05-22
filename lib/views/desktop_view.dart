@@ -6,39 +6,62 @@ import '../providers/providers.dart';
 import '../widgets/adventurer_card.dart';
 import 'add_adventurer_sheet.dart';
 
-// Cards never shrink below this so content isn't crushed on wide screens with
-// 4 adventurers.
-const double _kMinCardWidth = 400.0;
+// Each adventurer card is at least this wide. The add-slot is narrower and
+// excluded from the adventurer card width calculation so it does not steal
+// space from character sheets.
+const double _kMinCardWidth = 480.0;
+const double _kAddSlotWidth = 200.0;
 
-class DesktopView extends ConsumerWidget {
+class DesktopView extends ConsumerStatefulWidget {
   const DesktopView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopView> createState() => _DesktopViewState();
+}
+
+class _DesktopViewState extends ConsumerState<DesktopView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final party = ref.watch(partyProvider);
     final canAdd = party.adventurers.length < maxPartySize;
 
-    // Divide viewport width by the number of actually visible slots so cards
-    // expand naturally on wide screens, but never shrink below the minimum.
-    final visibleSlots = party.adventurers.length + (canAdd ? 1 : 0);
+    final n = party.adventurers.length;
     final viewWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (viewWidth / visibleSlots)
-        .clamp(_kMinCardWidth, double.infinity);
+    final addWidth = canAdd ? _kAddSlotWidth : 0.0;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ...party.adventurers.map(
-            (a) => SizedBox(
-              width: cardWidth,
-              child: AdventurerCard(adventurerId: a.id),
+    // Adventurer cards expand to fill available space (excluding the add slot)
+    // but never shrink below the minimum.
+    final cardWidth = n == 0
+        ? viewWidth - addWidth
+        : ((viewWidth - addWidth) / n).clamp(_kMinCardWidth, double.infinity);
+
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ...party.adventurers.map(
+              (a) => SizedBox(
+                width: cardWidth,
+                child: AdventurerCard(adventurerId: a.id),
+              ),
             ),
-          ),
-          if (canAdd)
-            SizedBox(width: cardWidth, child: _AddAdventurerSlot()),
-        ],
+            if (canAdd)
+              SizedBox(width: _kAddSlotWidth, child: _AddAdventurerSlot()),
+          ],
+        ),
       ),
     );
   }

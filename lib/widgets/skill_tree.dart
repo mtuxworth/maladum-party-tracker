@@ -37,6 +37,8 @@ class SkillTree extends ConsumerWidget {
       ..sort((a, b) => a.first.name.compareTo(b.first.name));
 
     final owned = Set<String>.from(adventurer.ownedSkillIds);
+    final spent = owned.length;
+    final available = (adventurer.xpPegs - spent).clamp(0, adventurer.xpPegs);
 
     return ExpansionTile(
       title: Row(
@@ -44,7 +46,7 @@ class SkillTree extends ConsumerWidget {
           const Text('Skills'),
           const SizedBox(width: 8),
           Text(
-            '(${adventurer.skillPegs} pegs)',
+            '$spent spent · $available available',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -57,17 +59,10 @@ class SkillTree extends ConsumerWidget {
               return SkillGroup(
                 tiers: tiers,
                 ownedSkillIds: owned,
-                skillPegs: adventurer.skillPegs,
+                xpAvailable: available,
+                currentRank: adventurer.currentRank,
                 onUnlock: (id) => notifier.unlockSkill(id),
-                onUse: () {
-                  final used = notifier.useSkillPeg();
-                  if (!used && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('No skill pegs remaining.')),
-                    );
-                  }
-                },
+                onRemove: (id) => notifier.removeSkill(id),
               );
             }).toList(),
           ),

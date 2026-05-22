@@ -6,6 +6,7 @@ import '../models/enums.dart';
 import '../models/party_state.dart';
 import '../providers/providers.dart';
 import '../utils/file_io.dart';
+import '../widgets/guilder_bar.dart';
 import '../widgets/responsive_layout.dart';
 import 'add_adventurer_sheet.dart';
 import 'party_drawer.dart';
@@ -42,7 +43,12 @@ class MainScaffold extends ConsumerWidget {
         ],
       ),
       drawer: const PartyDrawer(),
-      body: const ResponsiveLayout(),
+      body: const Column(
+        children: [
+          GuilderBar(),
+          Expanded(child: ResponsiveLayout()),
+        ],
+      ),
       // FAB for adding an adventurer on mobile only.
       floatingActionButton:
           isMobile && canAddMore ? _buildFab(context) : null,

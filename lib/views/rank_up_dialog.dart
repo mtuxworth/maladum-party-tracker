@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/character_classes.dart';
 import '../models/enums.dart';
-import '../models/skill.dart';
-import '../models/skill_data.dart';
 import '../providers/providers.dart';
-import '../widgets/skill_node.dart';
 
 void showRankUpDialog(
   BuildContext context,
@@ -34,32 +30,37 @@ class _RankUpDialog extends ConsumerWidget {
     final adventurer = ref.watch(adventurerProvider(adventurerId));
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
 
-    final charClass = kAllClasses
-        .where((c) => c.id == adventurer.characterClass)
-        .firstOrNull;
-    final skillNames = charClass?.skillNames ?? [];
-    final availableSkills = kAllSkills
-        .where(
-          (s) =>
-              skillNames.contains(s.name) &&
-              !adventurer.ownedSkillIds.contains(s.id) &&
-              (s.prerequisiteId == null ||
-                  adventurer.ownedSkillIds.contains(s.prerequisiteId)),
-        )
-        .toList();
+    final boostOptions = <({IconData icon, String label, StatType type})>[
+      if (adventurer.health.starting < adventurer.health.potential)
+        (icon: Icons.favorite, label: '+1 Health', type: StatType.health),
+      if (adventurer.skill.starting < adventurer.skill.potential)
+        (
+          icon: Icons.sports_martial_arts,
+          label: '+1 Skill',
+          type: StatType.skill,
+        ),
+      if (adventurer.magic.starting < adventurer.magic.potential)
+        (icon: Icons.auto_fix_high, label: '+1 Magic', type: StatType.magic),
+      if (adventurer.action.starting < adventurer.action.potential)
+        (icon: Icons.bolt, label: '+1 Action', type: StatType.action),
+    ];
 
     return AlertDialog(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Level ${newRank + 1}!',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(color: const Color(0xFFE65100))),
-          Text(adventurer.name,
-              style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            'Level ${newRank + 1}!',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(color: const Color(0xFFE65100)),
+          ),
+          Text(
+            adventurer.name,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
       content: SingleChildScrollView(
@@ -67,56 +68,20 @@ class _RankUpDialog extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Choose a permanent reward:'),
-            const SizedBox(height: 16),
-            _SectionLabel('Boost a Stat'),
-            const SizedBox(height: 6),
-            if (adventurer.health.starting < adventurer.health.potential)
-              _RewardTile(
-                icon: Icons.favorite,
-                label: '+1 Health',
-                onTap: () {
-                  notifier.increaseStatStarting(StatType.health);
-                  Navigator.pop(context);
-                },
-              ),
-            if (adventurer.skill.starting < adventurer.skill.potential)
-              _RewardTile(
-                icon: Icons.sports_martial_arts,
-                label: '+1 Skill',
-                onTap: () {
-                  notifier.increaseStatStarting(StatType.skill);
-                  Navigator.pop(context);
-                },
-              ),
-            if (adventurer.magic.starting < adventurer.magic.potential)
-              _RewardTile(
-                icon: Icons.auto_fix_high,
-                label: '+1 Magic',
-                onTap: () {
-                  notifier.increaseStatStarting(StatType.magic);
-                  Navigator.pop(context);
-                },
-              ),
-            if (adventurer.action.starting < adventurer.action.potential)
-              _RewardTile(
-                icon: Icons.bolt,
-                label: '+1 Action',
-                onTap: () {
-                  notifier.increaseStatStarting(StatType.action);
-                  Navigator.pop(context);
-                },
-              ),
-            if (availableSkills.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _SectionLabel('Unlock a Skill'),
+            if (boostOptions.isEmpty)
+              const Text(
+                'All stats are at maximum — no boosts available.',
+                style: TextStyle(color: Colors.white54),
+              )
+            else ...[
+              _SectionLabel('Choose a permanent stat boost'),
               const SizedBox(height: 6),
-              ...availableSkills.map(
-                (skill) => _SkillRewardTile(
-                  skill: skill,
-                  icon: skillCategoryIcon(skill.category),
+              ...boostOptions.map(
+                (o) => _RewardTile(
+                  icon: o.icon,
+                  label: o.label,
                   onTap: () {
-                    notifier.unlockSkill(skill.id);
+                    notifier.increaseStatStarting(o.type);
                     Navigator.pop(context);
                   },
                 ),
@@ -125,6 +90,13 @@ class _RankUpDialog extends ConsumerWidget {
           ],
         ),
       ),
+      actions: [
+        if (boostOptions.isEmpty)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+      ],
     );
   }
 }
@@ -162,38 +134,6 @@ class _RewardTile extends StatelessWidget {
       dense: true,
       leading: Icon(icon, size: 20),
       title: Text(label),
-      onTap: onTap,
-    );
-  }
-}
-
-class _SkillRewardTile extends StatelessWidget {
-  final Skill skill;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SkillRewardTile({
-    required this.skill,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      leading: Icon(icon, size: 20),
-      title: Text(skill.name),
-      subtitle: Text(
-        skill.description,
-        style: Theme.of(context).textTheme.bodySmall,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Text(
-        'T${skill.tier}',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
       onTap: onTap,
     );
   }

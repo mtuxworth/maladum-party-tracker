@@ -11,10 +11,10 @@ class ActionPointTracker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final apSlots = ref.watch(
-      adventurerProvider(adventurerId).select((a) => a.apSlots),
-    );
+    final adventurer = ref.watch(adventurerProvider(adventurerId));
     final notifier = ref.read(adventurerProvider(adventurerId).notifier);
+    final apCount = adventurer.action.starting;
+    final apSlots = adventurer.apSlots;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -24,9 +24,15 @@ class ActionPointTracker extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            APCircle(isSpent: apSlots[0], onTap: () => notifier.toggleAP(0)),
-            const SizedBox(width: 10),
-            APCircle(isSpent: apSlots[1], onTap: () => notifier.toggleAP(1)),
+            for (int i = 0; i < apCount; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              APCircle(
+                // Guard against apSlots being shorter than apCount if the
+                // adventurer gained AP via level-up after creation.
+                isSpent: i < apSlots.length && apSlots[i],
+                onTap: () => notifier.toggleAP(i),
+              ),
+            ],
           ],
         ),
       ],
