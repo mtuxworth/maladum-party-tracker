@@ -20,9 +20,9 @@ class SkillTree extends ConsumerWidget {
     final charClass = kAllClasses
         .where((c) => c.id == adventurer.characterClass)
         .firstOrNull;
-    final categories = charClass?.skillCategories ?? [];
+    final skillNames = charClass?.skillNames ?? [];
     final classSkills = kAllSkills
-        .where((s) => categories.contains(s.category))
+        .where((s) => skillNames.contains(s.name))
         .toList();
 
     // Group into base skills (strip trailing _1/_2/_3) then sort by tier.

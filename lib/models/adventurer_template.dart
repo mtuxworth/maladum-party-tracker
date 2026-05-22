@@ -13,6 +13,7 @@ class AdventurerTemplate {
   // XP cost to complete each rank row, in order (up to 5 ranks).
   final List<int> rankXpCosts;
   final int guilderCost;
+  final int startingXp;
 
   const AdventurerTemplate({
     required this.id,
@@ -28,5 +29,6 @@ class AdventurerTemplate {
     required this.actionPotential,
     required this.rankXpCosts,
     required this.guilderCost,
+    this.startingXp = 0,
   });
 }

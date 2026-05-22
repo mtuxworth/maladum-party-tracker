@@ -38,11 +38,7 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
     final cls = _charClass;
     if (cls == null) return [];
     return kAllSkills
-        .where(
-          (s) =>
-              s.tier == 1 &&
-              cls.skillCategories.contains(s.category),
-        )
+        .where((s) => s.tier == 1 && cls.skillNames.contains(s.name))
         .toList();
   }
 
@@ -82,6 +78,7 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
           MaladumStat(starting: tmpl.skillStart, potential: tmpl.skillPotential),
       action:
           MaladumStat(starting: tmpl.actionStart, potential: tmpl.actionPotential),
+      xpPegs: tmpl.startingXp,
       skillPegs: tmpl.skillStart,
       rankXpCosts: List.of(tmpl.rankXpCosts),
       ownedSkillIds: _pickedSkillIds.toList(),
@@ -157,7 +154,8 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
                           ),
                           title: Text(c.name),
                           subtitle: Text(
-                            c.skillCategories.join(' · '),
+                            'G${c.guilderCost}'
+                            '${c.magicPegSlots > 0 ? ' · ${c.magicPegSlots} magic pegs' : ''}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           onTap: () => setState(() {

@@ -995,4 +995,29 @@ const List<Skill> kAllSkills = [
         'reposition this character in an adjacent square.',
     prerequisiteId: 'sur_tracking_2',
   ),
+  Skill(
+    id: 'mel_training_1',
+    name: 'Training',
+    tier: 1,
+    category: 'Melee',
+    description: 'Add 1 die to your first combat attack each turn.',
+  ),
+  Skill(
+    id: 'mel_training_2',
+    name: 'Training',
+    tier: 2,
+    category: 'Melee',
+    description: 'Once per round, re-roll one combat die.',
+    prerequisiteId: 'mel_training_1',
+  ),
+  Skill(
+    id: 'mel_training_3',
+    name: 'Training',
+    tier: 3,
+    category: 'Melee',
+    description:
+        'Gain +1 Combat when attacking an enemy you have previously damaged '
+        'this quest.',
+    prerequisiteId: 'mel_training_2',
+  ),
 ];

@@ -37,11 +37,11 @@ class _RankUpDialog extends ConsumerWidget {
     final charClass = kAllClasses
         .where((c) => c.id == adventurer.characterClass)
         .firstOrNull;
-    final categories = charClass?.skillCategories ?? [];
+    final skillNames = charClass?.skillNames ?? [];
     final availableSkills = kAllSkills
         .where(
           (s) =>
-              categories.contains(s.category) &&
+              skillNames.contains(s.name) &&
               !adventurer.ownedSkillIds.contains(s.id) &&
               (s.prerequisiteId == null ||
                   adventurer.ownedSkillIds.contains(s.prerequisiteId)),
