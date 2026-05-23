@@ -30,13 +30,13 @@ void main() {
       expect(find.byIcon(Icons.add), findsNWidgets(3));
     });
 
-    testWidgets('occupied slot shows effect name', (tester) async {
+    testWidgets('occupied slot hides the add icon', (tester) async {
       final adventurer = makeTestAdventurer();
-      adventurer.statusSlots[0] = StatusEffect.poison;
+      adventurer.statusSlots[0] = StatusEffect.poisoned;
 
       await tester.pumpWidget(_build(adventurer));
 
-      expect(find.text('poison'), findsOneWidget);
+      // Slot now shows an image, not text — only 2 empty slots remain.
       expect(find.byIcon(Icons.add), findsNWidgets(2));
     });
 

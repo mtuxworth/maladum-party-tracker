@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/preset_parties.dart';
 import '../providers/providers.dart';
 
 class PartyDrawer extends ConsumerWidget {
@@ -59,15 +60,50 @@ class PartyDrawer extends ConsumerWidget {
   void _showNewPartyDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
 
+    void submit(BuildContext ctx, {required bool usePreset}) {
+      final name = controller.text.trim();
+      if (name.isEmpty) return;
+      if (usePreset) {
+        ref
+            .read(partyProvider.notifier)
+            .createPresetParty(name, buildRecommendedParty());
+      } else {
+        ref.read(partyProvider.notifier).createNewParty(name);
+      }
+      Navigator.pop(ctx);
+      Navigator.pop(context);
+    }
+
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('New Party'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Party name'),
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Party name'),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              onSubmitted: (_) => submit(ctx, usePreset: false),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start with the rulebook\'s recommended party, or build your '
+              'own from scratch.',
+              style: Theme.of(ctx).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Recommended: Callan (Sellsword) · Greet (Rogue) · '
+              'Moranna (Prymorist) · Syrio (Ranger)',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFE65100),
+                  ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -75,14 +111,12 @@ class PartyDrawer extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              ref.read(partyProvider.notifier).createNewParty(name);
-              Navigator.pop(ctx); // close dialog
-              Navigator.pop(context); // close drawer
-            },
-            child: const Text('Create'),
+            onPressed: () => submit(ctx, usePreset: false),
+            child: const Text('Start Fresh'),
+          ),
+          FilledButton(
+            onPressed: () => submit(ctx, usePreset: true),
+            child: const Text('Recommended'),
           ),
         ],
       ),

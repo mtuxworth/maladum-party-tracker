@@ -9,6 +9,7 @@ import '../utils/file_io.dart';
 import '../widgets/guilder_bar.dart';
 import '../widgets/responsive_layout.dart';
 import 'add_adventurer_sheet.dart';
+import 'icon_reference_view.dart';
 import 'party_drawer.dart';
 
 class MainScaffold extends ConsumerWidget {
@@ -25,6 +26,11 @@ class MainScaffold extends ConsumerWidget {
       appBar: AppBar(
         title: Text(party.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'Icon reference',
+            onPressed: () => IconReferenceView.show(context),
+          ),
           IconButton(
             icon: const Icon(Icons.upload_file),
             tooltip: 'Import party',

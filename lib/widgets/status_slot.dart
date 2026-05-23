@@ -2,16 +2,29 @@ import 'package:flutter/material.dart';
 
 import '../models/enums.dart';
 
-const Map<StatusEffect, Color> kStatusColors = {
-  StatusEffect.poison: Color(0xFF4CAF50),
-  StatusEffect.bless: Color(0xFFFFD700),
-  StatusEffect.stun: Color(0xFFFFEB3B),
-  StatusEffect.curse: Color(0xFF9C27B0),
-  StatusEffect.burn: Color(0xFFFF5722),
-  StatusEffect.slow: Color(0xFF2196F3),
-  StatusEffect.shield: Color(0xFF9E9E9E),
-  StatusEffect.haste: Color(0xFF00BCD4),
+// Maps each status effect to its game icon asset path.
+const Map<StatusEffect, String> kStatusImages = {
+  StatusEffect.blessed:  'assets/icons/kw_blessed.png',
+  StatusEffect.burning:  'assets/icons/kw_burning.png',
+  StatusEffect.fatigued: 'assets/icons/kw_fatigued.png',
+  StatusEffect.poisoned: 'assets/icons/kw_poisoned.png',
+  StatusEffect.stunned:  'assets/icons/kw_stunned.png',
+  StatusEffect.terrified:'assets/icons/kw_terrified.png',
+  StatusEffect.warded:   'assets/icons/kw_warded.png',
+  StatusEffect.wounded:  'assets/icons/kw_wounded.png',
 };
+
+// Display name with correct capitalisation.
+String _statusLabel(StatusEffect e) => switch (e) {
+      StatusEffect.blessed   => 'Blessed',
+      StatusEffect.burning   => 'Burning',
+      StatusEffect.fatigued  => 'Fatigued',
+      StatusEffect.poisoned  => 'Poisoned',
+      StatusEffect.stunned   => 'Stunned',
+      StatusEffect.terrified => 'Terrified',
+      StatusEffect.warded    => 'Warded',
+      StatusEffect.wounded   => 'Wounded',
+    };
 
 class StatusSlot extends StatelessWidget {
   final int slotIndex;
@@ -27,8 +40,6 @@ class StatusSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = effect != null ? kStatusColors[effect!] : null;
-
     return GestureDetector(
       onTap: () => _openPicker(context),
       child: Container(
@@ -37,36 +48,26 @@ class StatusSlot extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: color ?? Colors.grey.withValues(alpha: 0.4),
-            width: 2,
+            color: effect != null
+                ? Colors.white.withValues(alpha: 0.25)
+                : Colors.grey.withValues(alpha: 0.3),
+            width: 1.5,
           ),
-          color: color?.withValues(alpha: 0.15),
+          color: effect != null
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.transparent,
         ),
         child: effect != null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    effect!.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+            ? Padding(
+                padding: const EdgeInsets.all(8),
+                child: Image.asset(
+                  kStatusImages[effect!]!,
+                  filterQuality: FilterQuality.medium,
+                ),
               )
             : Icon(
                 Icons.add,
-                color: Colors.grey.withValues(alpha: 0.6),
+                color: Colors.grey.withValues(alpha: 0.5),
                 size: 22,
               ),
       ),
@@ -100,18 +101,58 @@ class _StatusPicker extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          ...StatusEffect.values.map(
-            (e) => ListTile(
-              leading: CircleAvatar(
-                radius: 10,
-                backgroundColor: kStatusColors[e],
-              ),
-              title: Text(e.name),
-              selected: e == current,
-              onTap: () {
-                onSelected(e);
-                Navigator.pop(context);
-              },
+          Flexible(
+            child: GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              children: StatusEffect.values.map((e) {
+                final isSelected = e == current;
+                return GestureDetector(
+                  onTap: () {
+                    onSelected(e);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : Colors.white.withValues(alpha: 0.15),
+                        width: isSelected ? 2 : 1,
+                      ),
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          kStatusImages[e]!,
+                          width: 40,
+                          height: 40,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _statusLabel(e),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           if (current != null)

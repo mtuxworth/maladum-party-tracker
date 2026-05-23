@@ -24,6 +24,7 @@ class Adventurer {
   // XP required to complete each rank row, derived from the template.
   List<int> rankXpCosts;
   List<String> ownedSkillIds;
+  List<String> ownedSpellIds;
 
   List<bool> apSlots;              // always 2 elements; true = spent
   List<StatusEffect?> statusSlots; // always 3 elements
@@ -43,6 +44,7 @@ class Adventurer {
     this.skillPegs = 0,
     List<int>? rankXpCosts,
     List<String>? ownedSkillIds,
+    List<String>? ownedSpellIds,
     List<bool>? apSlots,
     List<StatusEffect?>? statusSlots,
     List<EquipmentItem?>? gearSlots,
@@ -50,6 +52,7 @@ class Adventurer {
   })  : id = id ?? _generateId(),
         rankXpCosts = rankXpCosts ?? kDefaultRankXpCosts,
         ownedSkillIds = ownedSkillIds ?? [],
+        ownedSpellIds = ownedSpellIds ?? [],
         apSlots = apSlots ?? [false, false],
         statusSlots = statusSlots ?? List.filled(3, null),
         gearSlots = gearSlots ?? List.filled(maxGearSlots, null),
@@ -99,6 +102,7 @@ class Adventurer {
         skillPegs: source.skillPegs,
         rankXpCosts: List.of(source.rankXpCosts),
         ownedSkillIds: List.of(source.ownedSkillIds),
+        ownedSpellIds: List.of(source.ownedSpellIds),
         apSlots: List.of(source.apSlots),
         statusSlots: List.of(source.statusSlots),
         gearSlots: List.of(source.gearSlots),
@@ -118,6 +122,7 @@ class Adventurer {
         'skillPegs': skillPegs,
         'rankXpCosts': rankXpCosts,
         'ownedSkillIds': ownedSkillIds,
+        'ownedSpellIds': ownedSpellIds,
         'apSlots': apSlots,
         'statusSlots': statusSlots.map((s) => s?.name).toList(),
         'gearSlots': gearSlots.map((i) => i?.toJson()).toList(),
@@ -161,6 +166,10 @@ class Adventurer {
       skillPegs: json['skillPegs'] as int,
       rankXpCosts: rawCosts,
       ownedSkillIds: (json['ownedSkillIds'] as List?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      ownedSpellIds: (json['ownedSpellIds'] as List?)
               ?.map((e) => e as String)
               .toList() ??
           [],

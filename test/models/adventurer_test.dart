@@ -126,14 +126,14 @@ void main() {
 
     test('restores status slots', () {
       final original = _makeAdventurer();
-      original.statusSlots[0] = StatusEffect.poison;
-      original.statusSlots[2] = StatusEffect.bless;
+      original.statusSlots[0] = StatusEffect.poisoned;
+      original.statusSlots[2] = StatusEffect.blessed;
 
       final restored = Adventurer.fromJson(original.toJson());
 
-      expect(restored.statusSlots[0], equals(StatusEffect.poison));
+      expect(restored.statusSlots[0], equals(StatusEffect.poisoned));
       expect(restored.statusSlots[1], isNull);
-      expect(restored.statusSlots[2], equals(StatusEffect.bless));
+      expect(restored.statusSlots[2], equals(StatusEffect.blessed));
     });
 
     test('restores equipment in gear and pack slots', () {

@@ -117,11 +117,15 @@ class AdventurerNotifier
     return true;
   }
 
+  // Total XP spent across skills and spells.
+  int get _xpSpent =>
+      state.ownedSkillIds.length + state.ownedSpellIds.length;
+
   // Unlocks a skill tier, spending 1 XP.
   // Blocked if no XP is available or the tier exceeds the character's level.
   void unlockSkill(String skillId) {
     if (state.ownedSkillIds.contains(skillId)) return;
-    if (state.ownedSkillIds.length >= state.xpPegs) return;
+    if (_xpSpent >= state.xpPegs) return;
     // Import-free tier lookup: tier is encoded as the trailing digit in the id.
     final tier = int.tryParse(skillId.split('_').last) ?? 1;
     if (tier > state.currentRank + 1) return;
@@ -135,6 +139,24 @@ class AdventurerNotifier
     if (!state.ownedSkillIds.contains(skillId)) return;
     state.ownedSkillIds =
         state.ownedSkillIds.where((id) => id != skillId).toList();
+    _emit();
+  }
+
+  // Learns a spell, spending 1 XP. [spellRank] is 1-indexed (1–5).
+  // Blocked if no XP is available or rank exceeds the character's level.
+  void learnSpell(String spellId, int spellRank) {
+    if (state.ownedSpellIds.contains(spellId)) return;
+    if (_xpSpent >= state.xpPegs) return;
+    if (spellRank > state.currentRank + 1) return;
+    state.ownedSpellIds = [...state.ownedSpellIds, spellId];
+    _emit();
+  }
+
+  // Forgets a spell, refunding 1 XP.
+  void forgetSpell(String spellId) {
+    if (!state.ownedSpellIds.contains(spellId)) return;
+    state.ownedSpellIds =
+        state.ownedSpellIds.where((id) => id != spellId).toList();
     _emit();
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/skill.dart';
+import 'keyword_text.dart';
 
 IconData skillCategoryIcon(String category) => switch (category) {
       'Agility' => Icons.directions_run,
@@ -126,11 +127,9 @@ class SkillGroup extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 5),
-            Text(
+            KeywordText(
               displaySkill.description,
               style: const TextStyle(color: white70, fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             if (isOwned || nextSkill != null) ...[
               const SizedBox(height: 4),

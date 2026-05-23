@@ -37,8 +37,11 @@ class SkillTree extends ConsumerWidget {
       ..sort((a, b) => a.first.name.compareTo(b.first.name));
 
     final owned = Set<String>.from(adventurer.ownedSkillIds);
-    final spent = owned.length;
-    final available = (adventurer.xpPegs - spent).clamp(0, adventurer.xpPegs);
+    // XP budget is shared between skills and spells.
+    final totalSpent =
+        adventurer.ownedSkillIds.length + adventurer.ownedSpellIds.length;
+    final available =
+        (adventurer.xpPegs - totalSpent).clamp(0, adventurer.xpPegs);
 
     return ExpansionTile(
       title: Row(
@@ -46,7 +49,7 @@ class SkillTree extends ConsumerWidget {
           const Text('Skills'),
           const SizedBox(width: 8),
           Text(
-            '$spent spent · $available available',
+            '$totalSpent spent · $available available',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

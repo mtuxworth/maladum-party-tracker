@@ -8,6 +8,7 @@ import 'character_header.dart';
 import 'gear_slots_grid.dart';
 import 'inventory_pack_grid.dart';
 import 'skill_tree.dart';
+import 'spell_browser.dart';
 import 'stat_grid.dart';
 import 'status_tray.dart';
 
@@ -50,6 +51,7 @@ class AdventurerCard extends ConsumerWidget {
             ),
             const Divider(height: 24),
             SkillTree(adventurerId: adventurerId),
+            SpellBrowser(adventurerId: adventurerId),
             const Divider(height: 24),
             Text(
               'Gear',

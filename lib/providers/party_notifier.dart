@@ -72,6 +72,12 @@ class PartyNotifier extends Notifier<PartyState> {
     _save();
   }
 
+  void createPresetParty(String name, List<Adventurer> adventurers) {
+    _save();
+    state = PartyState(name: name, adventurers: adventurers);
+    _save();
+  }
+
   void switchToParty(String name) {
     _save();
     final box = Hive.box<String>(_boxName);

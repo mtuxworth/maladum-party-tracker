@@ -44,6 +44,21 @@ const List<CharacterClass> kAllClasses = [
         'speed, strength and form.',
     guilderCost: 16,
     magicPegSlots: 12,
+    spellIds: [
+      // Level 1
+      'prx_healing', 'prx_focus', 'prx_strength', 'prx_speed',
+      'prx_recover', 'vic_calm',
+      // Level 2
+      'prx_malacyte_shield', 'prx_hyper_awareness', 'prx_jump',
+      'vic_strengthen', 'vic_healing_hands',
+      // Level 3
+      'prx_malacyte_aura', 'prx_advanced_healing', 'prx_levitation',
+      'elm_cocoon',
+      // Level 4
+      'prx_phasing', 'vic_remote_resistance',
+      // Level 5
+      'prx_rearrange_cells',
+    ],
     skillNames: [
       'Tracking',
       'Distraction',
@@ -98,6 +113,20 @@ const List<CharacterClass> kAllClasses = [
         'and environmental magic.',
     guilderCost: 16,
     magicPegSlots: 12,
+    spellIds: [
+      // Level 1
+      'elm_focused_energy', 'elm_open_door', 'elm_telekinesis',
+      'elm_extinguish', 'elm_detect', 'vic_protect',
+      // Level 2
+      'prx_invisibility', 'elm_advanced_telekinesis', 'elm_push',
+      'elm_barricade', 'elm_advanced_detect',
+      // Level 3
+      'elm_malacyte_perception', 'elm_fireball', 'elm_torrent', 'elm_cocoon',
+      // Level 4
+      'elm_energy_burst', 'elm_rebuild',
+      // Level 5
+      'elm_portal',
+    ],
     skillNames: [
       'Power Manipulation',
       'Malacyte Mastery',
@@ -151,6 +180,21 @@ const List<CharacterClass> kAllClasses = [
         'of others through illusion and control.',
     guilderCost: 16,
     magicPegSlots: 12,
+    spellIds: [
+      // Level 1
+      'vic_bless', 'vic_deflection', 'vic_clouded_minds',
+      'prx_focus', 'elm_focused_energy', 'elm_telekinesis',
+      // Level 2
+      'vic_nausea', 'vic_enchantment', 'vic_illusion',
+      'prx_insight', 'elm_weaken_armour',
+      // Level 3
+      'vic_malacyte_sensitivity', 'vic_stun', 'vic_blood_boil',
+      'prx_alter_appearance',
+      // Level 4
+      'vic_advanced_illusion', 'elm_energy_burst',
+      // Level 5
+      'vic_advanced_enchantment',
+    ],
     skillNames: [
       'Power Manipulation',
       'Malacyte Mastery',
