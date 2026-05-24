@@ -16,18 +16,18 @@ IconData skillCategoryIcon(String category) => switch (category) {
       _ => Icons.star_outline,
     };
 
-// Card background colours matched to the rulebook skill category colours.
+// Card background colours — light pastels with black text.
 Color skillCategoryColor(String category) => switch (category) {
-      'Agility' => const Color(0xFF6B3A1F),
-      'Cunning' => const Color(0xFF4A2875),
-      'Endurance' => const Color(0xFF1A3A72),
-      'Magic' => const Color(0xFF0D1F5C),
-      'Melee' => const Color(0xFF7F1010),
-      'Ranged' => const Color(0xFF1A4A3A),
-      'Stealth' => const Color(0xFF1C1C28),
-      'Support' => const Color(0xFF5A4010),
-      'Survival' => const Color(0xFF1A4A1A),
-      _ => const Color(0xFF2C2C2C),
+      'Agility'   => const Color(0xFFCDB8F0), // light purple
+      'Cunning'   => const Color(0xFFDDC8A8), // light tan
+      'Endurance' => const Color(0xFFEEEE88), // light lemon yellow
+      'Magic'     => const Color(0xFFAAD4F8), // light blue
+      'Melee'     => const Color(0xFFF0A0A0), // light red
+      'Ranged'    => const Color(0xFF9ADCB4), // light green
+      'Stealth'   => const Color(0xFFF8C080), // light orange
+      'Support'   => const Color(0xFFCCCCDC), // light grey
+      'Survival'  => const Color(0xFF8ECC98), // light forest green
+      _           => const Color(0xFF2C2C2C),
     };
 
 // One card per unique skill name, showing tier dots, current description,
@@ -76,9 +76,9 @@ class SkillGroup extends StatelessWidget {
 
     final category = tiers.first.category;
     final bgColor = skillCategoryColor(category);
-    const white = Colors.white;
-    const white70 = Color(0xB3FFFFFF);
-    const white40 = Color(0x66FFFFFF);
+    const ink = Colors.black87;
+    const ink60 = Color(0x99000000);
+    const ink35 = Color(0x59000000);
 
     return Card(
       color: bgColor,
@@ -91,13 +91,13 @@ class SkillGroup extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(skillCategoryIcon(category), size: 16, color: white70),
+                Icon(skillCategoryIcon(category), size: 16, color: ink60),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     tiers.first.name,
                     style: const TextStyle(
-                      color: white,
+                      color: ink,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -114,9 +114,9 @@ class SkillGroup extends StatelessWidget {
                         height: 12,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: owned ? white : Colors.transparent,
+                          color: owned ? ink : Colors.transparent,
                           border: Border.all(
-                            color: owned ? white : white40,
+                            color: owned ? ink : ink35,
                             width: 1.5,
                           ),
                         ),
@@ -129,13 +129,28 @@ class SkillGroup extends StatelessWidget {
             const SizedBox(height: 5),
             KeywordText(
               displaySkill.description,
-              style: const TextStyle(color: white70, fontSize: 12),
+              style: const TextStyle(color: ink60, fontSize: 12),
             ),
             if (isOwned || nextSkill != null) ...[
               const SizedBox(height: 4),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // Info button on the left — tappable area is the full IconButton.
+                  if (tiers.length > 1)
+                    IconButton(
+                      onPressed: () =>
+                          _showTierDialog(context, tiers, currentTier),
+                      icon: const Icon(Icons.info_outline),
+                      iconSize: 20,
+                      color: ink35,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      tooltip: 'All tier descriptions',
+                    ),
+                  const Spacer(),
                   if (isOwned)
                     _CardButton(
                       label: '− Refund',
@@ -161,6 +176,119 @@ class SkillGroup extends StatelessWidget {
   }
 }
 
+void _showTierDialog(
+  BuildContext context,
+  List<Skill> tiers,
+  int currentTier,
+) {
+  showDialog<void>(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: _TierDialogContent(tiers: tiers, currentTier: currentTier),
+      ),
+    ),
+  );
+}
+
+class _TierDialogContent extends StatelessWidget {
+  final List<Skill> tiers;
+  final int currentTier;
+
+  const _TierDialogContent({required this.tiers, required this.currentTier});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tiers.first.name,
+            style: const TextStyle(
+              color: Color(0xFFF5F5F5),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...tiers.map((skill) {
+            final isOwned = skill.tier <= currentTier;
+            final isCurrent = skill.tier == currentTier;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tier badge
+                  Container(
+                    width: 48,
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? const Color(0xFFE65100)
+                          : isOwned
+                              ? const Color(0xFF444444)
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isOwned
+                            ? Colors.transparent
+                            : const Color(0xFF555555),
+                      ),
+                    ),
+                    child: Text(
+                      'Tier ${skill.tier}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isCurrent
+                            ? Colors.white
+                            : isOwned
+                                ? const Color(0xFFCCCCCC)
+                                : const Color(0xFF777777),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: KeywordText(
+                      skill.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isOwned
+                            ? const Color(0xFFF5F5F5)
+                            : const Color(0xFF777777),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: Color(0xFFE65100)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CardButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -172,8 +300,8 @@ class _CardButton extends StatelessWidget {
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: Colors.white,
-        disabledForegroundColor: Colors.white38,
+        foregroundColor: Colors.black87,
+        disabledForegroundColor: Colors.black38,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

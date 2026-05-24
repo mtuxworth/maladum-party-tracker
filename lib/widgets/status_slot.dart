@@ -75,9 +75,15 @@ class StatusSlot extends StatelessWidget {
   }
 
   void _openPicker(BuildContext context) {
-    showModalBottomSheet<void>(
+    showDialog<void>(
       context: context,
-      builder: (_) => _StatusPicker(current: effect, onSelected: onChanged),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 200),
+          child: _StatusPicker(current: effect, onSelected: onChanged),
+        ),
+      ),
     );
   }
 }
@@ -95,75 +101,101 @@ class _StatusPicker extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Text(
               'Select Status',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
+          const Divider(height: 1),
           Flexible(
-            child: GridView.count(
-              crossAxisCount: 4,
+            child: ListView(
               shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              children: StatusEffect.values.map((e) {
-                final isSelected = e == current;
-                return GestureDetector(
-                  onTap: () {
-                    onSelected(e);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.8)
-                            : Colors.white.withValues(alpha: 0.15),
-                        width: isSelected ? 2 : 1,
-                      ),
+              children: [
+                ...StatusEffect.values.map((e) {
+                  final isSelected = e == current;
+                  return InkWell(
+                    onTap: () {
+                      onSelected(e);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
                       color: isSelected
-                          ? Colors.white.withValues(alpha: 0.1)
+                          ? Colors.white.withValues(alpha: 0.08)
                           : Colors.transparent,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          kStatusImages[e]!,
-                          width: 40,
-                          height: 40,
-                          filterQuality: FilterQuality.medium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _statusLabel(e),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            kStatusImages[e]!,
+                            width: 28,
+                            height: 28,
+                            filterQuality: FilterQuality.medium,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              _statusLabel(e),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.85),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            const Icon(
+                              Icons.check,
+                              size: 18,
+                              color: Color(0xFFE65100),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                if (current != null) ...[
+                  const Divider(height: 1),
+                  InkWell(
+                    onTap: () {
+                      onSelected(null);
+                      Navigator.pop(context);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.clear,
+                            size: 22,
+                            color: Color(0xFFC62828),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            'Clear',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             ),
           ),
-          if (current != null)
-            ListTile(
-              leading: const Icon(Icons.clear, color: Color(0xFFC62828)),
-              title: const Text('Clear'),
-              onTap: () {
-                onSelected(null);
-                Navigator.pop(context);
-              },
-            ),
           const SizedBox(height: 8),
         ],
       ),
