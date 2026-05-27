@@ -84,22 +84,22 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
               children: [
                 _TeamNameCard(party: party),
                 const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: _TreasuryCard(party: party),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      flex: 2,
-                      child: _RenownCard(party: party),
-                    ),
-                  ],
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Flexible(
+                        flex: 1,
+                        child: _TreasuryCard(party: party),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        flex: 2,
+                        child: _RenownCard(party: party),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                _StorageCard(party: party),
                 const SizedBox(height: 10),
                 _NotesCard(
                   controller: _notesController,
@@ -107,6 +107,8 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                 ),
                 const SizedBox(height: 10),
                 _RosterCard(party: party),
+                const SizedBox(height: 10),
+                _StorageCard(party: party),
                 const SizedBox(height: 20),
                 _ActionRow(party: party),
                 const SizedBox(height: 32),
@@ -682,12 +684,18 @@ class _ActionRow extends ConsumerWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: FilledButton.icon(
+          child: FilledButton(
             onPressed: party.adventurers.isEmpty
                 ? null
                 : () => _showFormPartyDialog(context, ref, party),
-            icon: const Icon(Icons.flag, size: 18),
-            label: const Text('Start Quest'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('⚔', style: TextStyle(fontSize: 16)),
+                SizedBox(width: 8),
+                Text('Start Quest'),
+              ],
+            ),
           ),
         ),
       ],
