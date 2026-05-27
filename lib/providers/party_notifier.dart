@@ -16,7 +16,7 @@ class PartyNotifier extends Notifier<PartyState> {
   PartyState build() {
     final box = Hive.box<String>(_boxName);
     final activeName = box.get(_activeKey);
-    if (activeName == null) return PartyState(name: 'My Party');
+    if (activeName == null) return PartyState(name: 'My Party', guilders: 350);
     return _loadFromBox(box, activeName);
   }
 
@@ -59,7 +59,7 @@ class PartyNotifier extends Notifier<PartyState> {
 
   void createNewParty(String name) {
     _save();
-    state = PartyState(name: name);
+    state = PartyState(name: name, guilders: 350);
     _save();
   }
 
@@ -67,6 +67,7 @@ class PartyNotifier extends Notifier<PartyState> {
     _save();
     state = PartyState(
       name: name,
+      guilders: 350,
       adventurers: adventurers,
       // All preset adventurers start active (preset parties are ≤4).
       activePartyIds: adventurers.map((a) => a.id).toList(),

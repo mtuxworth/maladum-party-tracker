@@ -7,10 +7,12 @@ import '../models/character_classes.dart';
 import '../models/enums.dart';
 import '../models/equipment_item.dart';
 import '../models/party_state.dart';
+import '../models/preset_parties.dart';
 import '../providers/providers.dart';
 import '../widgets/renown_tracker.dart';
 import 'add_adventurer_sheet.dart';
 import 'add_item_sheet.dart';
+import 'main_scaffold.dart';
 
 class BaseCampView extends ConsumerStatefulWidget {
   const BaseCampView({super.key});
@@ -40,13 +42,35 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
     ref.read(partyProvider.notifier).setNotes(_notesController.text);
   }
 
+  void _showTeamSwitcher() {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const _TeamSwitcherDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final party = ref.watch(partyProvider);
 
+    // Sync notes controller text when the party changes (e.g. after team switch).
+    if (_notesController.text != party.notes) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _notesController.text = party.notes;
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Base Camp'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.people_alt),
+            tooltip: 'Manage teams',
+            onPressed: _showTeamSwitcher,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -109,6 +133,15 @@ class _TeamNameCardState extends ConsumerState<_TeamNameCard> {
   }
 
   @override
+  void didUpdateWidget(_TeamNameCard old) {
+    super.didUpdateWidget(old);
+    // Keep controller in sync when a team switch changes the party name.
+    if (old.party.name != widget.party.name && !_editing) {
+      _ctrl.text = widget.party.name;
+    }
+  }
+
+  @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
@@ -149,7 +182,7 @@ class _TeamNameCardState extends ConsumerState<_TeamNameCard> {
           ),
           IconButton(
             icon: Icon(_editing ? Icons.check : Icons.edit, size: 18),
-            tooltip: _editing ? 'Save name' : 'Rename party',
+            tooltip: _editing ? 'Save name' : 'Rename team',
             onPressed: () {
               if (_editing) {
                 _save();
@@ -315,21 +348,24 @@ class _StorageCard extends ConsumerWidget {
               final item = party.storageSlots[i];
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: i < maxStorageSlots - 1 ? 6 : 0),
+                  padding: EdgeInsets.only(
+                    right: i < maxStorageSlots - 1 ? 6 : 0,
+                  ),
                   child: _StorageSlot(
                     item: item,
-                    onTap: () async {
-                      if (item != null) return;
-                      final picked = await showAddItemSheet(
-                        context,
-                        forGear: false,
-                      );
-                      if (picked != null) {
-                        ref
-                            .read(partyProvider.notifier)
-                            .updateStorageSlot(i, picked);
-                      }
-                    },
+                    onTap: item != null
+                        ? null
+                        : () async {
+                            final picked = await showAddItemSheet(
+                              context,
+                              forGear: false,
+                            );
+                            if (picked != null) {
+                              ref
+                                  .read(partyProvider.notifier)
+                                  .updateStorageSlot(i, picked);
+                            }
+                          },
                     onLongPress: item != null
                         ? () => ref
                             .read(partyProvider.notifier)
@@ -367,9 +403,8 @@ class _StorageSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = item != null
-        ? _borderColors[item!.color] ?? Colors.grey
-        : Colors.white24;
+    final borderColor =
+        item != null ? (_borderColors[item!.color] ?? Colors.grey) : Colors.white24;
 
     return GestureDetector(
       onTap: onTap,
@@ -533,9 +568,7 @@ class _RosterTile extends StatelessWidget {
           Icon(
             isActive ? Icons.shield : Icons.shield_outlined,
             size: 16,
-            color: isActive
-                ? const Color(0xFFE65100)
-                : Colors.white38,
+            color: isActive ? const Color(0xFFE65100) : Colors.white38,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -564,8 +597,7 @@ class _RosterTile extends StatelessWidget {
           ),
           if (isActive)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: const Color(0xFFE65100).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(4),
@@ -588,8 +620,7 @@ class _RosterTile extends StatelessWidget {
             tooltip: 'Remove from roster',
             color: Colors.white38,
             padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints(minWidth: 32, minHeight: 32),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () => _confirmRemove(context),
           ),
         ],
@@ -615,9 +646,8 @@ class _RosterTile extends StatelessWidget {
               Navigator.pop(ctx);
               onRemove();
             },
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFC62828),
-            ),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Remove'),
           ),
         ],
@@ -677,10 +707,7 @@ class _ActionRow extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Rest',
-                  style: Theme.of(ctx).textTheme.titleLarge,
-                ),
+                Text('Rest', style: Theme.of(ctx).textTheme.titleLarge),
                 const SizedBox(height: 6),
                 Text(
                   'Clears all status effects and resets Action Points '
@@ -690,12 +717,12 @@ class _ActionRow extends ConsumerWidget {
                       ),
                 ),
                 const SizedBox(height: 20),
-                // Inn option
                 _RestOption(
                   icon: Icons.hotel,
                   title: 'Rest at Inn',
-                  subtitle: '$innCost Guilders '
-                      '(2 × ${party.adventurers.length} adventurer${party.adventurers.length == 1 ? '' : 's'})',
+                  subtitle:
+                      '$innCost Guilders (2 × ${party.adventurers.length} '
+                      'adventurer${party.adventurers.length == 1 ? '' : 's'})',
                   enabled: canAffordInn,
                   disabledReason: canAffordInn
                       ? null
@@ -705,15 +732,13 @@ class _ActionRow extends ConsumerWidget {
                     ref.read(partyProvider.notifier).restInn();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          'Rested at Inn — $innCost Guilders spent.',
-                        ),
+                        content:
+                            Text('Rested at Inn — $innCost Guilders spent.'),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 8),
-                // Wilderness option
                 _RestOption(
                   icon: Icons.forest,
                   title: 'Rest in Wilderness',
@@ -723,7 +748,9 @@ class _ActionRow extends ConsumerWidget {
                     Navigator.pop(ctx);
                     ref.read(partyProvider.notifier).restWilderness();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Rested in the wilderness.')),
+                      const SnackBar(
+                        content: Text('Rested in the wilderness.'),
+                      ),
                     );
                   },
                 ),
@@ -750,7 +777,14 @@ class _ActionRow extends ConsumerWidget {
   ) {
     showDialog<void>(
       context: context,
-      builder: (ctx) => _FormPartyDialog(party: party),
+      builder: (ctx) => _FormPartyDialog(
+        party: party,
+        // After confirming, push the quest view from the Base Camp context.
+        onConfirmed: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const MainScaffold()),
+        ),
+      ),
     );
   }
 }
@@ -806,9 +840,7 @@ class _RestOption extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: enabled
-                          ? Colors.white
-                          : Colors.white38,
+                      color: enabled ? Colors.white : Colors.white38,
                     ),
                   ),
                   Text(
@@ -834,7 +866,12 @@ class _RestOption extends StatelessWidget {
 
 class _FormPartyDialog extends ConsumerStatefulWidget {
   final PartyState party;
-  const _FormPartyDialog({required this.party});
+  final VoidCallback onConfirmed;
+
+  const _FormPartyDialog({
+    required this.party,
+    required this.onConfirmed,
+  });
 
   @override
   ConsumerState<_FormPartyDialog> createState() => _FormPartyDialogState();
@@ -861,9 +898,8 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
 
   void _confirm() {
     ref.read(partyProvider.notifier).setActiveParty(_selected.toList());
-    Navigator.pop(context);
-    // Return to the quest view.
-    Navigator.pop(context);
+    Navigator.pop(context); // close the dialog
+    widget.onConfirmed();   // push the quest view
   }
 
   @override
@@ -875,12 +911,12 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+          padding: const EdgeInsets.only(bottom: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
                 child: Row(
                   children: [
                     Expanded(
@@ -902,13 +938,15 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
                   ],
                 ),
               ),
-              Text(
-                'Select up to $maxPartySize adventurers for the next quest.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white54,
-                    ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  'Select up to $maxPartySize adventurers for the next quest.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                ),
               ),
-              const SizedBox(height: 8),
               const Divider(height: 1),
               Flexible(
                 child: ListView(
@@ -995,6 +1033,163 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Team switcher dialog ──────────────────────────────────────────────────────
+
+class _TeamSwitcherDialog extends ConsumerWidget {
+  const _TeamSwitcherDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final party = ref.watch(partyProvider);
+    final notifier = ref.read(partyProvider.notifier);
+    final saved = notifier.listSavedParties();
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Text(
+                'Teams',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: saved.map((name) {
+                  final isActive = name == party.name;
+                  return ListTile(
+                    leading: Icon(
+                      isActive ? Icons.shield : Icons.shield_outlined,
+                      color: isActive
+                          ? const Color(0xFFE65100)
+                          : Colors.white54,
+                      size: 20,
+                    ),
+                    title: Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isActive
+                            ? const Color(0xFFE65100)
+                            : Colors.white,
+                      ),
+                    ),
+                    trailing: isActive
+                        ? const Icon(
+                            Icons.check,
+                            color: Color(0xFFE65100),
+                            size: 18,
+                          )
+                        : null,
+                    onTap: isActive
+                        ? null
+                        : () {
+                            notifier.switchToParty(name);
+                            Navigator.pop(context);
+                          },
+                  );
+                }).toList(),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.add, color: Color(0xFFE65100)),
+              title: const Text(
+                'New Team',
+                style: TextStyle(color: Color(0xFFE65100)),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _showNewTeamDialog(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNewTeamDialog(BuildContext context, WidgetRef ref) {
+    final ctrl = TextEditingController();
+
+    void submit(BuildContext ctx, {required bool usePreset}) {
+      final name = ctrl.text.trim();
+      if (name.isEmpty) return;
+      if (usePreset) {
+        ref
+            .read(partyProvider.notifier)
+            .createPresetParty(name, buildRecommendedParty());
+      } else {
+        ref.read(partyProvider.notifier).createNewParty(name);
+      }
+      Navigator.pop(ctx);
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Team'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: ctrl,
+              decoration: const InputDecoration(labelText: 'Team name'),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              onSubmitted: (_) => submit(ctx, usePreset: false),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start with the recommended party, or build your own.',
+              style: Theme.of(ctx).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Recommended: Callan (Sellsword) · Greet (Rogue) · '
+              'Moranna (Prymorist) · Syrio (Ranger)',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFE65100),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'All new teams start with 350 Guilders.',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFFFB300),
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => submit(ctx, usePreset: false),
+            child: const Text('Start Fresh'),
+          ),
+          FilledButton(
+            onPressed: () => submit(ctx, usePreset: true),
+            child: const Text('Recommended'),
+          ),
+        ],
       ),
     );
   }

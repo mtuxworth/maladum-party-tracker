@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'views/main_scaffold.dart';
+import 'views/base_camp_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,7 @@ class MaladumTrackerApp extends StatelessWidget {
       title: 'Maladum Party Tracker',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
-      home: const MainScaffold(),
+      home: const BaseCampView(),
     );
   }
 

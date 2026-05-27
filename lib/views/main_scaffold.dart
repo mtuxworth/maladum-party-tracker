@@ -7,9 +7,7 @@ import '../providers/providers.dart';
 import '../utils/file_io.dart';
 import '../widgets/guilder_bar.dart';
 import '../widgets/responsive_layout.dart';
-import 'base_camp_view.dart';
 import 'icon_reference_view.dart';
-import 'party_drawer.dart';
 
 class MainScaffold extends ConsumerWidget {
   const MainScaffold({super.key});
@@ -22,16 +20,6 @@ class MainScaffold extends ConsumerWidget {
       appBar: AppBar(
         title: Text(party.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cabin),
-            tooltip: 'Base Camp',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const BaseCampView(),
-              ),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.menu_book),
             tooltip: 'Icon reference',
@@ -54,7 +42,6 @@ class MainScaffold extends ConsumerWidget {
           ),
         ],
       ),
-      drawer: const PartyDrawer(),
       body: const Column(
         children: [
           GuilderBar(),
@@ -96,12 +83,13 @@ class MainScaffold extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(partyProvider.notifier).endQuestReset();
               if (!context.mounted) return;
-              // Stat boost prompt for each active party member only.
               final active = ref.read(partyProvider).activeParty;
               for (final adventurer in active) {
                 if (!context.mounted) break;
                 await _showStatBoostDialog(context, ref, adventurer);
               }
+              // Return to Base Camp after end-quest flow completes.
+              if (context.mounted) Navigator.pop(context);
             },
             child: const Text('End Quest'),
           ),
