@@ -10,22 +10,22 @@ import '../models/maladum_stat.dart';
 import '../providers/providers.dart';
 
 void showAddAdventurerSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  showDialog<void>(
     context: context,
-    isScrollControlled: true,
-    builder: (_) => const _AddAdventurerSheet(),
+    builder: (_) => const _HireAdventurerDialog(),
   );
 }
 
-class _AddAdventurerSheet extends ConsumerStatefulWidget {
-  const _AddAdventurerSheet();
+class _HireAdventurerDialog extends ConsumerStatefulWidget {
+  const _HireAdventurerDialog();
 
   @override
-  ConsumerState<_AddAdventurerSheet> createState() =>
-      _AddAdventurerSheetState();
+  ConsumerState<_HireAdventurerDialog> createState() =>
+      _HireAdventurerDialogState();
 }
 
-class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
+class _HireAdventurerDialogState
+    extends ConsumerState<_HireAdventurerDialog> {
   AdventurerTemplate? _template;
   CharacterClass? _charClass;
 
@@ -38,7 +38,6 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
     });
   }
 
-  // Returns to the adventurer list, clearing all selections.
   void _clearTemplate() {
     setState(() {
       _template = null;
@@ -80,25 +79,33 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    // Template IDs already present in the roster — excluded from the picker.
+    final hiredIds = ref
+        .watch(partyProvider)
+        .adventurers
+        .map((a) => a.templateId)
+        .whereType<String>()
+        .toSet();
+
     final templateChosen = _template != null;
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (_, controller) => Padding(
-        padding: EdgeInsets.only(bottom: bottom),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      insetPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _SheetHandle(),
-            // ── Header ──────────────────────────────────────────────────────
+            // ── Header ──────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(4, 12, 16, 8),
               child: Row(
                 children: [
-                  // Back arrow shown once a template is chosen.
                   if (templateChosen)
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
@@ -111,7 +118,7 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
                     child: Text(
                       templateChosen
                           ? _template!.name
-                          : 'Add Adventurer',
+                          : 'Hire Adventurer',
                       style: Theme.of(context).textTheme.titleLarge,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -119,24 +126,23 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
                   if (_canSubmit)
                     FilledButton(
                       onPressed: _submit,
-                      child: const Text('Add'),
+                      child: const Text('Hire'),
                     ),
                 ],
               ),
             ),
             const Divider(height: 1),
-            // ── Body ────────────────────────────────────────────────────────
-            Expanded(
+            // ── Body ────────────────────────────────────────────────────
+            Flexible(
               child: templateChosen
                   ? _ClassPickerList(
-                      controller: controller,
                       template: _template!,
                       selectedClass: _charClass,
                       onSelectClass: (c) =>
                           setState(() => _charClass = c),
                     )
                   : _TemplateList(
-                      controller: controller,
+                      hiredIds: hiredIds,
                       onSelectTemplate: _selectTemplate,
                     ),
             ),
@@ -150,23 +156,38 @@ class _AddAdventurerSheetState extends ConsumerState<_AddAdventurerSheet> {
 // ── Phase 1: adventurer selection list ──────────────────────────────────────
 
 class _TemplateList extends StatelessWidget {
-  final ScrollController controller;
+  final Set<String> hiredIds;
   final void Function(AdventurerTemplate) onSelectTemplate;
 
   const _TemplateList({
-    required this.controller,
+    required this.hiredIds,
     required this.onSelectTemplate,
   });
 
   @override
   Widget build(BuildContext context) {
+    final available =
+        kAllTemplates.where((t) => !hiredIds.contains(t.id)).toList();
+
+    if (available.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(
+          child: Text(
+            'All adventurers have already been hired.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white54),
+          ),
+        ),
+      );
+    }
+
     return ListView(
-      controller: controller,
       padding: const EdgeInsets.all(16),
       children: [
         _SectionHeader('Choose Adventurer'),
         const SizedBox(height: 8),
-        ...kAllTemplates.map(
+        ...available.map(
           (t) => _TemplateTile(
             template: t,
             onTap: () => onSelectTemplate(t),
@@ -178,16 +199,14 @@ class _TemplateList extends StatelessWidget {
   }
 }
 
-// ── Phase 2: class picker shown after adventurer chosen ──────────────────────
+// ── Phase 2: class picker ────────────────────────────────────────────────────
 
 class _ClassPickerList extends StatelessWidget {
-  final ScrollController controller;
   final AdventurerTemplate template;
   final CharacterClass? selectedClass;
   final void Function(CharacterClass) onSelectClass;
 
   const _ClassPickerList({
-    required this.controller,
     required this.template,
     required this.selectedClass,
     required this.onSelectClass,
@@ -197,10 +216,8 @@ class _ClassPickerList extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = template;
     return ListView(
-      controller: controller,
       padding: const EdgeInsets.all(16),
       children: [
-        // Selected adventurer summary card.
         _SelectedAdventurerCard(template: t),
         const SizedBox(height: 20),
         _SectionHeader('Choose Class'),
@@ -213,7 +230,6 @@ class _ClassPickerList extends StatelessWidget {
             onTap: () => onSelectClass(c),
           );
         }),
-        // Guilder cost summary once a class is chosen.
         if (selectedClass != null) ...[
           const SizedBox(height: 16),
           _GuilderCostBanner(
@@ -259,7 +275,6 @@ class _SelectedAdventurerCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            // Stat grid.
             Row(
               children: [
                 _StatChip('Health', '${t.healthStart}/${t.healthPotential}'),
@@ -349,7 +364,6 @@ class _ClassTile extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             )
           : null,
-      // Guilder cost badge on the right of each class row.
       trailing: _GuilderBadge(c.guilderCost, highlight: isSelected),
     );
   }
@@ -403,8 +417,11 @@ class _GuilderCostBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.monetization_on_outlined,
-              color: Color(0xFFE65100), size: 20),
+          const Icon(
+            Icons.monetization_on_outlined,
+            color: Color(0xFFE65100),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -439,25 +456,6 @@ class _GuilderCostBanner extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SheetHandle extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Center(
-        child: Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
       ),
     );
   }
