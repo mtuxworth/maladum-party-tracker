@@ -8,6 +8,7 @@ import '../models/enums.dart';
 import '../models/equipment_item.dart';
 import '../models/party_state.dart';
 import '../models/preset_parties.dart';
+import '../providers/party_notifier.dart';
 import '../providers/providers.dart';
 import '../widgets/renown_tracker.dart';
 import 'add_adventurer_sheet.dart';
@@ -1119,8 +1120,10 @@ class _TeamSwitcherDialog extends ConsumerWidget {
                 style: TextStyle(color: Color(0xFFE65100)),
               ),
               onTap: () {
+                // Capture notifier before this widget is disposed by the pop.
+                final notifier = ref.read(partyProvider.notifier);
                 Navigator.pop(context);
-                _showNewTeamDialog(context, ref);
+                _showNewTeamDialog(context, notifier);
               },
             ),
           ],
@@ -1129,18 +1132,16 @@ class _TeamSwitcherDialog extends ConsumerWidget {
     );
   }
 
-  void _showNewTeamDialog(BuildContext context, WidgetRef ref) {
+  void _showNewTeamDialog(BuildContext context, PartyNotifier notifier) {
     final ctrl = TextEditingController();
 
     void submit(BuildContext ctx, {required bool usePreset}) {
       final name = ctrl.text.trim();
       if (name.isEmpty) return;
       if (usePreset) {
-        ref
-            .read(partyProvider.notifier)
-            .createPresetParty(name, buildRecommendedParty());
+        notifier.createPresetParty(name, buildRecommendedParty());
       } else {
-        ref.read(partyProvider.notifier).createNewParty(name);
+        notifier.createNewParty(name);
       }
       Navigator.pop(ctx);
     }
