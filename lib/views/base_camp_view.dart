@@ -11,6 +11,7 @@ import '../models/preset_parties.dart';
 import '../providers/party_notifier.dart';
 import '../providers/providers.dart';
 import '../widgets/renown_tracker.dart';
+import '../widgets/adventurer_card.dart';
 import 'add_adventurer_sheet.dart';
 import 'add_item_sheet.dart';
 import 'main_scaffold.dart';
@@ -572,67 +573,95 @@ class _RosterTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(
-            isActive ? Icons.shield : Icons.shield_outlined,
-            size: 16,
-            color: isActive ? const Color(0xFFE65100) : Colors.white38,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  adventurer.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+      child: InkWell(
+        onTap: () => _openCard(context),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? Icons.shield : Icons.shield_outlined,
+                size: 16,
+                color: isActive ? const Color(0xFFE65100) : Colors.white38,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      adventurer.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      '$className · Rank ${adventurer.currentRank + 1}'
+                      '  ·  '
+                      'H ${adventurer.health.current}/${adventurer.health.potential}'
+                      '  M ${adventurer.magic.current}/${adventurer.magic.potential}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE65100).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: const Color(0xFFE65100).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Text(
+                    'Active',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFFE65100),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                Text(
-                  '$className · Rank ${adventurer.currentRank + 1}'
-                  '  ·  '
-                  'H ${adventurer.health.current}/${adventurer.health.potential}'
-                  '  M ${adventurer.magic.current}/${adventurer.magic.potential}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
-                        fontSize: 11,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          if (isActive)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE65100).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: const Color(0xFFE65100).withValues(alpha: 0.4),
-                ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                tooltip: 'Remove from roster',
+                color: Colors.white38,
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () => _confirmRemove(context),
               ),
-              child: const Text(
-                'Active',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFFE65100),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.close, size: 16),
-            tooltip: 'Remove from roster',
-            color: Colors.white38,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () => _confirmRemove(context),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  void _openCard(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 600,
+            maxHeight: MediaQuery.of(ctx).size.height * 0.88,
+          ),
+          child: AdventurerCard(adventurerId: adventurer.id),
+        ),
       ),
     );
   }
