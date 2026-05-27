@@ -86,9 +86,15 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _TreasuryCard(party: party)),
+                    Flexible(
+                      flex: 1,
+                      child: _TreasuryCard(party: party),
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: _RenownCard(party: party)),
+                    Flexible(
+                      flex: 2,
+                      child: _RenownCard(party: party),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
