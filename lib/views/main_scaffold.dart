@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/adventurer.dart';
 import '../models/enums.dart';
-import '../models/party_state.dart';
 import '../providers/providers.dart';
 import '../utils/file_io.dart';
 import '../widgets/guilder_bar.dart';
 import '../widgets/responsive_layout.dart';
-import 'add_adventurer_sheet.dart';
+import 'base_camp_view.dart';
 import 'icon_reference_view.dart';
 import 'party_drawer.dart';
 
@@ -18,14 +17,21 @@ class MainScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final party = ref.watch(partyProvider);
-    final isMobile =
-        MediaQuery.of(context).size.width < kResponsiveBreakpoint;
-    final canAddMore = party.adventurers.length < maxPartySize;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(party.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.cabin),
+            tooltip: 'Base Camp',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const BaseCampView(),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.menu_book),
             tooltip: 'Icon reference',
@@ -55,17 +61,6 @@ class MainScaffold extends ConsumerWidget {
           Expanded(child: ResponsiveLayout()),
         ],
       ),
-      // FAB for adding an adventurer on mobile only.
-      floatingActionButton:
-          isMobile && canAddMore ? _buildFab(context) : null,
-    );
-  }
-
-  Widget _buildFab(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () => showAddAdventurerSheet(context),
-      tooltip: 'Add adventurer',
-      child: const Icon(Icons.person_add),
     );
   }
 
@@ -87,7 +82,7 @@ class MainScaffold extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('End Quest'),
         content: const Text(
-          'Apply rest to all adventurers?\n'
+          'Apply rest to active party?\n'
           'Clears statuses, resets AP, recovers 2 Magic, '
           'then each adventurer chooses +1 Health Max or +1 Skill Max.',
         ),
@@ -101,13 +96,14 @@ class MainScaffold extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(partyProvider.notifier).endQuestReset();
               if (!context.mounted) return;
-              final adventurers = ref.read(partyProvider).adventurers;
-              for (final adventurer in adventurers) {
+              // Stat boost prompt for each active party member only.
+              final active = ref.read(partyProvider).activeParty;
+              for (final adventurer in active) {
                 if (!context.mounted) break;
                 await _showStatBoostDialog(context, ref, adventurer);
               }
             },
-            child: const Text('Rest'),
+            child: const Text('End Quest'),
           ),
         ],
       ),
@@ -115,7 +111,6 @@ class MainScaffold extends ConsumerWidget {
   }
 }
 
-// Non-dismissible dialog shown once per adventurer after endQuestReset.
 Future<void> _showStatBoostDialog(
   BuildContext context,
   WidgetRef ref,
