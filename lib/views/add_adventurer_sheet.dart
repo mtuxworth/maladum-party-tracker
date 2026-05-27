@@ -48,6 +48,7 @@ class _HireAdventurerDialogState
   void _submit() {
     final tmpl = _template!;
     final cls = _charClass!;
+    final cost = tmpl.guilderCost + cls.guilderCost;
     final adventurer = Adventurer(
       name: tmpl.name,
       templateId: tmpl.id,
@@ -73,7 +74,7 @@ class _HireAdventurerDialogState
       rankXpCosts: List.of(tmpl.rankXpCosts),
       ownedSkillIds: [],
     );
-    ref.read(partyProvider.notifier).addAdventurer(adventurer);
+    ref.read(partyProvider.notifier).addAdventurer(adventurer, cost: cost);
     Navigator.pop(context);
   }
 

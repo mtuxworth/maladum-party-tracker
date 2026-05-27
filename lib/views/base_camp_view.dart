@@ -1176,7 +1176,11 @@ class _TeamSwitcherDialog extends ConsumerWidget {
       final name = ctrl.text.trim();
       if (name.isEmpty) return;
       if (usePreset) {
-        notifier.createPresetParty(name, buildRecommendedParty());
+        notifier.createPresetParty(
+          name,
+          buildRecommendedParty(),
+          cost: recommendedPartyCost(),
+        );
       } else {
         notifier.createNewParty(name);
       }

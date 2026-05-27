@@ -32,10 +32,11 @@ class PartyNotifier extends Notifier<PartyState> {
 
   // ─── Party management ────────────────────────────────────────────────────
 
-  // Adds an adventurer to the roster (no size limit — hire as many as you like).
-  void addAdventurer(Adventurer adventurer) {
+  // Adds an adventurer to the roster and deducts the hire cost from treasury.
+  void addAdventurer(Adventurer adventurer, {int cost = 0}) {
     state = state.copyWith(
       adventurers: [...state.adventurers, adventurer],
+      guilders: (state.guilders - cost).clamp(0, 999999),
     );
     _save();
   }
@@ -63,11 +64,15 @@ class PartyNotifier extends Notifier<PartyState> {
     _save();
   }
 
-  void createPresetParty(String name, List<Adventurer> adventurers) {
+  void createPresetParty(
+    String name,
+    List<Adventurer> adventurers, {
+    int cost = 0,
+  }) {
     _save();
     state = PartyState(
       name: name,
-      guilders: 350,
+      guilders: (350 - cost).clamp(0, 999999),
       adventurers: adventurers,
       // All preset adventurers start active (preset parties are ≤4).
       activePartyIds: adventurers.map((a) => a.id).toList(),

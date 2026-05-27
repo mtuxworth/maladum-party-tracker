@@ -1,5 +1,6 @@
 import 'adventurer.dart';
 import 'adventurer_templates.dart';
+import 'character_classes.dart';
 import 'maladum_stat.dart';
 
 // Recommended starting party as described in the rulebook.
@@ -13,6 +14,23 @@ List<Adventurer> buildRecommendedParty() => [
         'sur_ready_for_anything_1',
       ]),
     ];
+
+// Total guilder cost for the recommended party (templates + classes).
+int recommendedPartyCost() {
+  const pairs = [
+    ('callan', 'sellsword'),
+    ('greet', 'rogue'),
+    ('moranna', 'prymorist'),
+    ('syrio', 'ranger'),
+  ];
+  var total = 0;
+  for (final (tid, cid) in pairs) {
+    final tmpl = kAllTemplates.firstWhere((t) => t.id == tid);
+    final cls = kAllClasses.firstWhere((c) => c.id == cid);
+    total += tmpl.guilderCost + cls.guilderCost;
+  }
+  return total;
+}
 
 Adventurer _build(
   String templateId,
