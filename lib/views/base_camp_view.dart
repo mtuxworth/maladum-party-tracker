@@ -15,6 +15,7 @@ import '../widgets/adventurer_card.dart';
 import 'add_adventurer_sheet.dart';
 import 'add_item_sheet.dart';
 import 'main_scaffold.dart';
+import 'market_view.dart';
 
 class BaseCampView extends ConsumerStatefulWidget {
   const BaseCampView({super.key});
@@ -702,29 +703,42 @@ class _ActionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _showRestDialog(context, ref, party),
-            icon: const Icon(Icons.hotel, size: 18),
-            label: const Text('Rest'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton(
-            onPressed: party.adventurers.isEmpty
-                ? null
-                : () => _showFormPartyDialog(context, ref, party),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('⚔', style: TextStyle(fontSize: 16)),
-                SizedBox(width: 8),
-                Text('Start Quest'),
-              ],
+        // Secondary actions row
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _showRestDialog(context, ref, party),
+                icon: const Icon(Icons.hotel, size: 18),
+                label: const Text('Rest'),
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => showMarketDialog(context),
+                icon: const Icon(Icons.storefront, size: 18),
+                label: const Text('Market'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Primary quest action
+        FilledButton(
+          onPressed: party.adventurers.isEmpty
+              ? null
+              : () => _showFormPartyDialog(context, ref, party),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('⚔', style: TextStyle(fontSize: 16)),
+              SizedBox(width: 8),
+              Text('Start Quest'),
+            ],
           ),
         ),
       ],
