@@ -63,6 +63,8 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
       });
     }
 
+    final isWide = MediaQuery.of(context).size.width >= 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Base Camp'),
@@ -91,12 +93,12 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Flexible(
-                        flex: 1,
                         child: _TreasuryCard(party: party),
                       ),
                       const SizedBox(width: 10),
+                      // 50/50 on mobile, 33/66 on desktop so pegs don't wrap.
                       Flexible(
-                        flex: 2,
+                        flex: isWide ? 2 : 1,
                         child: _RenownCard(party: party),
                       ),
                     ],
@@ -112,7 +114,7 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                 const SizedBox(height: 10),
                 _StorageCard(party: party),
                 const SizedBox(height: 20),
-                _ActionRow(party: party),
+                _ActionRow(party: party, isWide: isWide),
                 const SizedBox(height: 32),
               ],
             ),
@@ -699,48 +701,61 @@ class _RosterTile extends StatelessWidget {
 
 class _ActionRow extends ConsumerWidget {
   final PartyState party;
-  const _ActionRow({required this.party});
+  final bool isWide;
+  const _ActionRow({required this.party, required this.isWide});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final restBtn = OutlinedButton.icon(
+      onPressed: () => _showRestDialog(context, ref, party),
+      icon: const Icon(Icons.hotel, size: 18),
+      label: const Text('Rest'),
+    );
+    final marketBtn = OutlinedButton.icon(
+      onPressed: () => showMarketDialog(context),
+      icon: const Icon(Icons.storefront, size: 18),
+      label: const Text('Market'),
+    );
+    final questBtn = FilledButton(
+      onPressed: party.adventurers.isEmpty
+          ? null
+          : () => _showFormPartyDialog(context, ref, party),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('⚔', style: TextStyle(fontSize: 16)),
+          SizedBox(width: 8),
+          Text('Start Quest'),
+        ],
+      ),
+    );
+
+    if (isWide) {
+      // Desktop: all three buttons in one row.
+      return Row(
+        children: [
+          Expanded(child: restBtn),
+          const SizedBox(width: 12),
+          Expanded(child: marketBtn),
+          const SizedBox(width: 12),
+          Expanded(child: questBtn),
+        ],
+      );
+    }
+
+    // Mobile: Rest + Market on top row, Start Quest full-width below.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Secondary actions row
         Row(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showRestDialog(context, ref, party),
-                icon: const Icon(Icons.hotel, size: 18),
-                label: const Text('Rest'),
-              ),
-            ),
+            Expanded(child: restBtn),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => showMarketDialog(context),
-                icon: const Icon(Icons.storefront, size: 18),
-                label: const Text('Market'),
-              ),
-            ),
+            Expanded(child: marketBtn),
           ],
         ),
         const SizedBox(height: 10),
-        // Primary quest action
-        FilledButton(
-          onPressed: party.adventurers.isEmpty
-              ? null
-              : () => _showFormPartyDialog(context, ref, party),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('⚔', style: TextStyle(fontSize: 16)),
-              SizedBox(width: 8),
-              Text('Start Quest'),
-            ],
-          ),
-        ),
+        questBtn,
       ],
     );
   }
