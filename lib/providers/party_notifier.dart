@@ -122,6 +122,19 @@ class PartyNotifier extends Notifier<PartyState> {
     _save();
   }
 
+  // ─── Campaign ────────────────────────────────────────────────────────────
+
+  void toggleQuestComplete(String questId) {
+    final current = List<String>.of(state.completedQuestIds);
+    if (current.contains(questId)) {
+      current.remove(questId);
+    } else {
+      current.add(questId);
+    }
+    state = state.copyWith(completedQuestIds: current);
+    _save();
+  }
+
   // ─── Storage ─────────────────────────────────────────────────────────────
 
   void updateStorageSlot(int index, EquipmentItem? item) {

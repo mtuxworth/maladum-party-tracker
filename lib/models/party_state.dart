@@ -16,6 +16,8 @@ class PartyState {
   List<String> activePartyIds;
   // Items stored at base camp (fixed 5 slots).
   List<EquipmentItem?> storageSlots;
+  // IDs of campaign quests the party has completed.
+  List<String> completedQuestIds;
 
   PartyState({
     required this.name,
@@ -25,9 +27,11 @@ class PartyState {
     List<Adventurer>? adventurers,
     List<String>? activePartyIds,
     List<EquipmentItem?>? storageSlots,
+    List<String>? completedQuestIds,
   })  : adventurers = adventurers ?? [],
         activePartyIds = activePartyIds ?? [],
-        storageSlots = storageSlots ?? List.filled(maxStorageSlots, null);
+        storageSlots = storageSlots ?? List.filled(maxStorageSlots, null),
+        completedQuestIds = completedQuestIds ?? [];
 
   // Adventurers currently on the quest.
   List<Adventurer> get activeParty =>
@@ -41,6 +45,7 @@ class PartyState {
     List<Adventurer>? adventurers,
     List<String>? activePartyIds,
     List<EquipmentItem?>? storageSlots,
+    List<String>? completedQuestIds,
   }) =>
       PartyState(
         name: name ?? this.name,
@@ -50,6 +55,7 @@ class PartyState {
         adventurers: adventurers ?? this.adventurers,
         activePartyIds: activePartyIds ?? this.activePartyIds,
         storageSlots: storageSlots ?? this.storageSlots,
+        completedQuestIds: completedQuestIds ?? this.completedQuestIds,
       );
 
   Map<String, dynamic> toJson() => {
@@ -60,6 +66,7 @@ class PartyState {
         'adventurers': adventurers.map((a) => a.toJson()).toList(),
         'activePartyIds': activePartyIds,
         'storageSlots': storageSlots.map((i) => i?.toJson()).toList(),
+        'completedQuestIds': completedQuestIds,
       };
 
   factory PartyState.fromJson(Map<String, dynamic> json) {
@@ -86,6 +93,11 @@ class PartyState {
       rawStorage.add(null);
     }
 
+    final completedQuestIds = (json['completedQuestIds'] as List?)
+            ?.map((e) => e as String)
+            .toList() ??
+        <String>[];
+
     return PartyState(
       name: json['name'] as String,
       guilders: json['guilders'] as int? ?? 0,
@@ -94,6 +106,7 @@ class PartyState {
       adventurers: adventurers,
       activePartyIds: activeIds,
       storageSlots: rawStorage.take(maxStorageSlots).toList(),
+      completedQuestIds: completedQuestIds,
     );
   }
 }

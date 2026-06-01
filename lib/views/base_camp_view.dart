@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/adventurer.dart';
+import '../models/campaign_quests.dart';
 import '../models/character_classes.dart';
 import '../models/enums.dart';
 import '../models/equipment_item.dart';
@@ -113,6 +114,8 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                 _RosterCard(party: party),
                 const SizedBox(height: 10),
                 _StorageCard(party: party),
+                const SizedBox(height: 10),
+                _CampaignCard(party: party),
                 const SizedBox(height: 20),
                 _ActionRow(party: party, isWide: isWide),
                 const SizedBox(height: 32),
@@ -691,6 +694,134 @@ class _RosterTile extends StatelessWidget {
                 TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
             child: const Text('Remove'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Campaign tracker ─────────────────────────────────────────────────────────
+
+class _CampaignCard extends ConsumerWidget {
+  final PartyState party;
+  const _CampaignCard({required this.party});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final completed = Set<String>.from(party.completedQuestIds);
+    final total = kCampaignQuests.length;
+    final doneCount = kCampaignQuests
+        .where((q) => completed.contains(q.id))
+        .length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      // ExpansionTile provides its own padding, so no outer padding needed.
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        childrenPadding: EdgeInsets.zero,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        leading: const Icon(
+          Icons.map,
+          color: Color(0xFFE65100),
+          size: 18,
+        ),
+        title: Text(
+          'CAMPAIGN',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: const Color(0xFFE65100),
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        trailing: Text(
+          '$doneCount / $total',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: doneCount == total
+                    ? const Color(0xFFE65100)
+                    : Colors.white38,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        children: [
+          const Divider(height: 1),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: kCampaignQuests.length,
+            itemBuilder: (ctx, i) {
+              final quest = kCampaignQuests[i];
+              final isDone = completed.contains(quest.id);
+              final isSpecial = quest.type != QuestType.main;
+
+              return InkWell(
+                onTap: () => ref
+                    .read(partyProvider.notifier)
+                    .toggleQuestComplete(quest.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isDone
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                        color: isDone
+                            ? const Color(0xFFE65100)
+                            : Colors.white24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              quest.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                letterSpacing: 0.8,
+                                fontWeight: FontWeight.bold,
+                                color: isSpecial
+                                    ? const Color(0xFF9E9E9E)
+                                    : const Color(0xFFE65100)
+                                        .withValues(alpha: 0.7),
+                                decoration: isDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                decorationColor: Colors.white24,
+                              ),
+                            ),
+                            if (quest.name.isNotEmpty)
+                              Text(
+                                quest.name,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color:
+                                      isDone ? Colors.white38 : Colors.white,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: Colors.white38,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
         ],
       ),
     );
