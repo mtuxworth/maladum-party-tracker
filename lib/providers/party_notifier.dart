@@ -16,7 +16,8 @@ class PartyNotifier extends Notifier<PartyState> {
   PartyState build() {
     final box = Hive.box<String>(_boxName);
     final activeName = box.get(_activeKey);
-    if (activeName == null) return PartyState(name: 'My Party', guilders: 350);
+    // No saved party — return placeholder so UI can prompt for creation.
+    if (activeName == null) return PartyState(name: '');
     return _loadFromBox(box, activeName);
   }
 
@@ -208,6 +209,8 @@ class PartyNotifier extends Notifier<PartyState> {
   // ─── Persistence ─────────────────────────────────────────────────────────
 
   void _save() {
+    // Never persist the placeholder state used before a party is created.
+    if (state.name.isEmpty) return;
     final box = Hive.box<String>(_boxName);
     unawaited(box.put(state.name, jsonEncode(state.toJson())));
     unawaited(box.put(_activeKey, state.name));

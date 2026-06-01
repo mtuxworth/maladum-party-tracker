@@ -34,6 +34,18 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
     _notesController = TextEditingController(
       text: ref.read(partyProvider).notes,
     );
+    // Show creation dialog on first launch before any party exists.
+    if (ref.read(partyProvider).name.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showNewTeamDialog(
+            context,
+            ref.read(partyProvider.notifier),
+            isFirstRun: true,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -1320,7 +1332,7 @@ class _TeamSwitcherDialog extends ConsumerWidget {
                 // Capture notifier before this widget is disposed by the pop.
                 final notifier = ref.read(partyProvider.notifier);
                 Navigator.pop(context);
-                _showNewTeamDialog(context, notifier);
+                showNewTeamDialog(context, notifier);
               },
             ),
           ],
@@ -1329,78 +1341,87 @@ class _TeamSwitcherDialog extends ConsumerWidget {
     );
   }
 
-  void _showNewTeamDialog(BuildContext context, PartyNotifier notifier) {
-    final ctrl = TextEditingController();
+}
 
-    void submit(BuildContext ctx, {required bool usePreset}) {
-      final name = ctrl.text.trim();
-      if (name.isEmpty) return;
-      if (usePreset) {
-        notifier.createPresetParty(
-          name,
-          buildRecommendedParty(),
-          cost: recommendedPartyCost(),
-        );
-      } else {
-        notifier.createNewParty(name);
-      }
-      Navigator.pop(ctx);
+// Shared helper — called from first-run (isFirstRun: true) and team-switcher.
+void showNewTeamDialog(
+  BuildContext context,
+  PartyNotifier notifier, {
+  bool isFirstRun = false,
+}) {
+  final ctrl = TextEditingController();
+
+  void submit(BuildContext ctx, {required bool usePreset}) {
+    final name = ctrl.text.trim();
+    if (name.isEmpty) return;
+    if (usePreset) {
+      notifier.createPresetParty(
+        name,
+        buildRecommendedParty(),
+        cost: recommendedPartyCost(),
+      );
+    } else {
+      notifier.createNewParty(name);
     }
+    Navigator.pop(ctx);
+  }
 
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Team'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: ctrl,
-              decoration: const InputDecoration(labelText: 'Team name'),
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              onSubmitted: (_) => submit(ctx, usePreset: false),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Start with the recommended party, or build your own.',
-              style: Theme.of(ctx).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Recommended: Callan (Sellsword) · Greet (Rogue) · '
-              'Moranna (Prymorist) · Syrio (Ranger)',
-              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFFE65100),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'All new teams start with 350 Guilders.',
-              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFFFFB300),
-                  ),
-            ),
-          ],
-        ),
-        actions: [
+  showDialog<void>(
+    context: context,
+    // Prevent dismissal on first launch — a party name is required.
+    barrierDismissible: !isFirstRun,
+    builder: (ctx) => AlertDialog(
+      title: const Text('New Team'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(labelText: 'Team name'),
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            onSubmitted: (_) => submit(ctx, usePreset: false),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Start with the recommended party, or build your own.',
+            style: Theme.of(ctx).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Recommended: Callan (Sellsword) · Greet (Rogue) · '
+            'Moranna (Prymorist) · Syrio (Ranger)',
+            style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFE65100),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'All new teams start with 350 Guilders.',
+            style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFFFB300),
+                ),
+          ),
+        ],
+      ),
+      actions: [
+        if (!isFirstRun)
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => submit(ctx, usePreset: false),
-            child: const Text('Start Fresh'),
-          ),
-          FilledButton(
-            onPressed: () => submit(ctx, usePreset: true),
-            child: const Text('Recommended'),
-          ),
-        ],
-      ),
-    );
-  }
+        TextButton(
+          onPressed: () => submit(ctx, usePreset: false),
+          child: const Text('Start Fresh'),
+        ),
+        FilledButton(
+          onPressed: () => submit(ctx, usePreset: true),
+          child: const Text('Recommended'),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Shared sub-widgets ────────────────────────────────────────────────────────
