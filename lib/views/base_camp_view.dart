@@ -13,8 +13,10 @@ import '../providers/party_notifier.dart';
 import '../providers/providers.dart';
 import '../widgets/renown_tracker.dart';
 import '../widgets/adventurer_card.dart';
+import '../utils/file_io.dart';
 import 'add_adventurer_sheet.dart';
 import 'add_item_sheet.dart';
+import 'icon_reference_view.dart';
 import 'main_scaffold.dart';
 import 'market_view.dart';
 
@@ -58,6 +60,18 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
     ref.read(partyProvider.notifier).setNotes(_notesController.text);
   }
 
+  Future<void> _import(BuildContext context) async {
+    final imported = await importPartyFromFile();
+    if (!context.mounted) return;
+    if (imported == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read party file.')),
+      );
+      return;
+    }
+    ref.read(partyProvider.notifier).importState(imported);
+  }
+
   void _showTeamSwitcher() {
     showDialog<void>(
       context: context,
@@ -83,6 +97,22 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
         title: const Text('Base Camp'),
         automaticallyImplyLeading: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'Icon reference',
+            onPressed: () => IconReferenceView.show(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Import party',
+            onPressed: () => _import(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Export party',
+            onPressed: () =>
+                exportPartyToFile(ref.read(partyProvider)),
+          ),
           IconButton(
             icon: const Icon(Icons.people_alt),
             tooltip: 'Manage teams',
