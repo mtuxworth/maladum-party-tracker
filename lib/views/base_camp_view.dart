@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/adventurer.dart';
 import '../models/campaign_quests.dart';
 import '../models/character_classes.dart';
+import '../models/quest_log_entry.dart';
 import '../models/enums.dart';
 import '../models/equipment_item.dart';
 import '../models/party_state.dart';
@@ -157,7 +158,7 @@ class _BaseCampViewState extends ConsumerState<BaseCampView> {
                 const SizedBox(height: 10),
                 _StorageCard(party: party),
                 const SizedBox(height: 10),
-                _CampaignCard(party: party),
+                _QuestLogCard(party: party),
                 const SizedBox(height: 20),
                 _ActionRow(party: party, isWide: isWide),
                 const SizedBox(height: 32),
@@ -742,129 +743,214 @@ class _RosterTile extends StatelessWidget {
   }
 }
 
-// ── Campaign tracker ─────────────────────────────────────────────────────────
+// ── Quest Log card ────────────────────────────────────────────────────────────
 
-class _CampaignCard extends ConsumerWidget {
+class _QuestLogCard extends StatelessWidget {
   final PartyState party;
-  const _CampaignCard({required this.party});
+  const _QuestLogCard({required this.party});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final completed = Set<String>.from(party.completedQuestIds);
-    final total = kCampaignQuests.length;
-    final doneCount = kCampaignQuests
-        .where((q) => completed.contains(q.id))
-        .length;
+  Widget build(BuildContext context) {
+    final entries = party.questLog.reversed.toList();
+    final strandedCount = party.leftBehindIds.length;
+
+    // Campaign quests run at least once (derived from log).
+    final doneCampaignIds = party.questLog
+        .where((e) => e.campaignQuestId != null)
+        .map((e) => e.campaignQuestId!)
+        .toSet();
 
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF2C2C2C),
         borderRadius: BorderRadius.circular(10),
       ),
-      // ExpansionTile provides its own padding, so no outer padding needed.
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        tilePadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         childrenPadding: EdgeInsets.zero,
         shape: const Border(),
         collapsedShape: const Border(),
         leading: const Icon(
-          Icons.map,
+          Icons.menu_book_outlined,
           color: Color(0xFFE65100),
           size: 18,
         ),
         title: Text(
-          'CAMPAIGN',
+          'QUEST LOG',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: const Color(0xFFE65100),
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.bold,
               ),
         ),
+        subtitle: strandedCount > 0
+            ? Text(
+                '⚠ $strandedCount stranded',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFC62828),
+                ),
+              )
+            : null,
         trailing: Text(
-          '$doneCount / $total',
+          '${entries.length}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: doneCount == total
-                    ? const Color(0xFFE65100)
-                    : Colors.white38,
+                color: entries.isEmpty
+                    ? Colors.white38
+                    : const Color(0xFFE65100),
                 fontWeight: FontWeight.bold,
               ),
         ),
         children: [
           const Divider(height: 1),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: kCampaignQuests.length,
-            itemBuilder: (ctx, i) {
-              final quest = kCampaignQuests[i];
-              final isDone = completed.contains(quest.id);
-              final isSpecial = quest.type != QuestType.main;
-
-              return InkWell(
-                onTap: () => ref
-                    .read(partyProvider.notifier)
-                    .toggleQuestComplete(quest.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isDone
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        size: 18,
-                        color: isDone
-                            ? const Color(0xFFE65100)
-                            : Colors.white24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              quest.label,
-                              style: TextStyle(
-                                fontSize: 10,
-                                letterSpacing: 0.8,
-                                fontWeight: FontWeight.bold,
-                                color: isSpecial
-                                    ? const Color(0xFF9E9E9E)
-                                    : const Color(0xFFE65100)
-                                        .withValues(alpha: 0.7),
-                                decoration: isDone
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                decorationColor: Colors.white24,
-                              ),
-                            ),
-                            if (quest.name.isNotEmpty)
-                              Text(
-                                quest.name,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color:
-                                      isDone ? Colors.white38 : Colors.white,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  decorationColor: Colors.white38,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
+          if (entries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  'No quests recorded yet.\nStart a quest to begin tracking.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.white38),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, indent: 14, endIndent: 14),
+              itemBuilder: (ctx, i) =>
+                  _QuestLogEntryTile(entry: entries[i]),
+            ),
+          // Campaign progress footer.
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFF3A3A3A)),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.map_outlined,
+                    size: 14, color: Colors.white38),
+                const SizedBox(width: 8),
+                Text(
+                  'Campaign: ${doneCampaignIds.length} / '
+                  '${kCampaignQuests.length} quests played',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white38,
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+}
+
+class _QuestLogEntryTile extends StatelessWidget {
+  final QuestLogEntry entry;
+  const _QuestLogEntryTile({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final partyNames = entry.party.map((p) => p.name).join(', ');
+    final hasLeft = entry.leftBehind.isNotEmpty;
+    final hasDied = entry.died.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (entry.isRescueMission) ...[
+                const Icon(Icons.shield,
+                    size: 13, color: Color(0xFF1565C0)),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  entry.questName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Text(
+                _fmtDate(entry.timestamp),
+                style: const TextStyle(
+                    fontSize: 11, color: Colors.white38),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            partyNames,
+            style: const TextStyle(fontSize: 11, color: Colors.white54),
+          ),
+          if (hasLeft || hasDied) ...[
+            const SizedBox(height: 5),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (hasLeft)
+                  _OutcomeBadge(
+                    label:
+                        'Left behind: ${entry.leftBehind.map((p) => p.name).join(', ')}',
+                    color: const Color(0xFFF9A825),
+                  ),
+                if (hasDied)
+                  _OutcomeBadge(
+                    label:
+                        'Died: ${entry.died.map((p) => p.name).join(', ')}',
+                    color: const Color(0xFFC62828),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _fmtDate(DateTime dt) =>
+      '${dt.day}/${dt.month}/${dt.year % 100}';
+}
+
+class _OutcomeBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _OutcomeBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border:
+            Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -1110,6 +1196,9 @@ class _RestOption extends StatelessWidget {
 
 // ── Form Party dialog ─────────────────────────────────────────────────────────
 
+const String _kQuestCustom = '_custom';
+const String _kQuestRescue = '_rescue';
+
 class _FormPartyDialog extends ConsumerStatefulWidget {
   final PartyState party;
   final VoidCallback onConfirmed;
@@ -1125,12 +1214,45 @@ class _FormPartyDialog extends ConsumerStatefulWidget {
 
 class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
   late Set<String> _selected;
+  String? _questPickerValue;
+  final _customNameCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _selected = Set<String>.from(widget.party.activePartyIds);
   }
+
+  @override
+  void dispose() {
+    _customNameCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _hasStranded => widget.party.leftBehindIds.isNotEmpty;
+
+  // Resolved display name for the chosen quest, null if incomplete.
+  String? get _resolvedQuestName {
+    if (_questPickerValue == null) return null;
+    if (_questPickerValue == _kQuestRescue) return 'Rescue Mission';
+    if (_questPickerValue == _kQuestCustom) {
+      final n = _customNameCtrl.text.trim();
+      return n.isEmpty ? null : n;
+    }
+    final q =
+        kCampaignQuests.firstWhere((q) => q.id == _questPickerValue);
+    return q.name.isNotEmpty ? '${q.label} – ${q.name}' : q.label;
+  }
+
+  String? get _resolvedCampaignQuestId =>
+      (_questPickerValue == null ||
+              _questPickerValue == _kQuestCustom ||
+              _questPickerValue == _kQuestRescue)
+          ? null
+          : _questPickerValue;
+
+  bool get _canSubmit =>
+      _selected.isNotEmpty && _resolvedQuestName != null;
 
   void _toggle(String id) {
     setState(() {
@@ -1143,9 +1265,15 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
   }
 
   void _confirm() {
-    ref.read(partyProvider.notifier).setActiveParty(_selected.toList());
-    Navigator.pop(context); // close the dialog
-    widget.onConfirmed();   // push the quest view
+    if (!_canSubmit) return;
+    ref.read(partyProvider.notifier).startQuest(
+          questName: _resolvedQuestName!,
+          campaignQuestId: _resolvedCampaignQuestId,
+          isRescueMission: _questPickerValue == _kQuestRescue,
+          partyIds: _selected.toList(),
+        );
+    Navigator.pop(context);
+    widget.onConfirmed();
   }
 
   @override
@@ -1155,130 +1283,276 @@ class _FormPartyDialogState extends ConsumerState<_FormPartyDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-                child: Row(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Form Party',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  Text(
+                    '${_selected.length} / $maxPartySize',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _selected.length == maxPartySize
+                          ? const Color(0xFFE65100)
+                          : Colors.white54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Form Party',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
+                    // ── Quest selection ────────────────────────────────
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                      child: _SectionLabel('Quest'),
                     ),
-                    Text(
-                      '${_selected.length} / $maxPartySize',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: _selected.length == maxPartySize
-                            ? const Color(0xFFE65100)
-                            : Colors.white54,
-                        fontWeight: FontWeight.bold,
+                    if (_hasStranded)
+                      _StrandedBanner(
+                        leftBehindIds: widget.party.leftBehindIds,
+                        adventurers: roster,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Text(
-                  'Select up to $maxPartySize adventurers for the next quest.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
-                      ),
-                ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: roster.map((a) {
-                    final checked = _selected.contains(a.id);
-                    final canSelect =
-                        checked || _selected.length < maxPartySize;
-                    final cls = kAllClasses
-                        .where((c) => c.id == a.characterClass)
-                        .firstOrNull;
-                    return InkWell(
-                      onTap: canSelect ? () => _toggle(a.id) : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _questPickerValue,
+                        isExpanded: true,
+                        hint: const Text('Select quest…'),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              checked
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                              size: 20,
-                              color: checked
-                                  ? const Color(0xFFE65100)
-                                  : canSelect
-                                      ? Colors.white54
-                                      : Colors.white24,
+                        items: [
+                          if (_hasStranded)
+                            const DropdownMenuItem(
+                              value: _kQuestRescue,
+                              child: Text('🏃 Rescue Mission'),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    a.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: canSelect
-                                          ? Colors.white
-                                          : Colors.white38,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${cls?.name ?? a.characterClass}'
-                                    ' · Rank ${a.currentRank + 1}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: canSelect
-                                          ? Colors.white54
-                                          : Colors.white24,
-                                    ),
-                                  ),
-                                ],
+                          ...kCampaignQuests.map(
+                            (q) => DropdownMenuItem(
+                              value: q.id,
+                              child: Text(
+                                q.name.isNotEmpty
+                                    ? '${q.label} – ${q.name}'
+                                    : q.label,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ],
+                          ),
+                          const DropdownMenuItem(
+                            value: _kQuestCustom,
+                            child: Text('Custom Mission…'),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _questPickerValue = v),
+                      ),
+                    ),
+                    if (_questPickerValue == _kQuestCustom)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: TextField(
+                          controller: _customNameCtrl,
+                          autofocus: true,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Mission name',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                          ),
+                          onChanged: (_) => setState(() {}),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    // ── Party selection ────────────────────────────────
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: _SectionLabel('Party'),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _selected.isEmpty ? null : _confirm,
-                      child: const Text('Start Quest'),
-                    ),
+                    ...roster.map((a) {
+                      final checked = _selected.contains(a.id);
+                      final isStranded =
+                          widget.party.leftBehindIds.contains(a.id);
+                      final canSelect =
+                          checked || _selected.length < maxPartySize;
+                      final cls = kAllClasses
+                          .where((c) => c.id == a.characterClass)
+                          .firstOrNull;
+                      return InkWell(
+                        onTap: canSelect ? () => _toggle(a.id) : null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                checked
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                size: 20,
+                                color: checked
+                                    ? const Color(0xFFE65100)
+                                    : canSelect
+                                        ? Colors.white54
+                                        : Colors.white24,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          a.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: canSelect
+                                                ? Colors.white
+                                                : Colors.white38,
+                                          ),
+                                        ),
+                                        if (isStranded) ...[
+                                          const SizedBox(width: 6),
+                                          const _StrandedChip(),
+                                        ],
+                                      ],
+                                    ),
+                                    Text(
+                                      '${cls?.name ?? a.characterClass}'
+                                      ' · Rank ${a.currentRank + 1}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: canSelect
+                                            ? Colors.white54
+                                            : Colors.white24,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
-            ],
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _canSubmit ? _confirm : null,
+                    child: const Text('Start Quest'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StrandedBanner extends StatelessWidget {
+  final List<String> leftBehindIds;
+  final List<Adventurer> adventurers;
+  const _StrandedBanner({
+    required this.leftBehindIds,
+    required this.adventurers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final names = adventurers
+        .where((a) => leftBehindIds.contains(a.id))
+        .map((a) => a.name)
+        .join(', ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFC62828).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFC62828).withValues(alpha: 0.4),
           ),
         ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber,
+                size: 15, color: Color(0xFFC62828)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Stranded: $names',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFC62828),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StrandedChip extends StatelessWidget {
+  const _StrandedChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC62828).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        'Stranded',
+        style: TextStyle(fontSize: 9, color: Color(0xFFC62828)),
       ),
     );
   }

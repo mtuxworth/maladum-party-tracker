@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/adventurer.dart';
 import '../models/enums.dart';
+import '../models/quest_log_entry.dart';
 import '../providers/providers.dart';
 import '../utils/file_io.dart';
 import '../widgets/guilder_bar.dart';
@@ -64,14 +65,16 @@ class MainScaffold extends ConsumerWidget {
   }
 
   void _confirmEndQuest(BuildContext context, WidgetRef ref) {
+    final questName =
+        ref.read(partyProvider).activeQuestName ?? 'this quest';
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('End Quest'),
-        content: const Text(
-          'Apply rest to active party?\n'
-          'Clears statuses, resets AP, recovers 2 Magic, '
-          'then each adventurer chooses +1 Health Max or +1 Skill Max.',
+        content: Text(
+          'Returning from $questName?\n'
+          'You will record each adventurer\'s fate, then survivors '
+          'choose +1 Health Max or +1 Skill Max.',
         ),
         actions: [
           TextButton(
@@ -83,13 +86,33 @@ class MainScaffold extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(partyProvider.notifier).endQuestReset();
               if (!context.mounted) return;
+
               final active = ref.read(partyProvider).activeParty;
+              final outcomes = <String, AdventurerOutcome>{};
+
+              // Record fate for each party member.
               for (final adventurer in active) {
                 if (!context.mounted) break;
-                await _showStatBoostDialog(context, ref, adventurer);
+                final outcome =
+                    await _showOutcomeDialog(context, adventurer);
+                outcomes[adventurer.id] = outcome;
               }
-              // Return to Base Camp after end-quest flow completes.
-              if (context.mounted) Navigator.pop(context);
+
+              // Stat boost only for survivors.
+              for (final adventurer in active) {
+                if (!context.mounted) break;
+                if (outcomes[adventurer.id] == AdventurerOutcome.survived) {
+                  await _showStatBoostDialog(context, ref, adventurer);
+                }
+              }
+
+              // Persist quest log and return to Base Camp.
+              if (context.mounted) {
+                ref
+                    .read(partyProvider.notifier)
+                    .recordQuestComplete(outcomes);
+                Navigator.pop(context);
+              }
             },
             child: const Text('End Quest'),
           ),
@@ -97,6 +120,39 @@ class MainScaffold extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<AdventurerOutcome> _showOutcomeDialog(
+  BuildContext context,
+  Adventurer adventurer,
+) async {
+  return await showDialog<AdventurerOutcome>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text(adventurer.name),
+          content: const Text('What happened on this quest?'),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, AdventurerOutcome.leftBehind),
+              child: const Text('Left Behind'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFC62828)),
+              onPressed: () => Navigator.pop(ctx, AdventurerOutcome.died),
+              child: const Text('Died'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, AdventurerOutcome.survived),
+              child: const Text('Survived'),
+            ),
+          ],
+        ),
+      ) ??
+      AdventurerOutcome.survived;
 }
 
 Future<void> _showStatBoostDialog(

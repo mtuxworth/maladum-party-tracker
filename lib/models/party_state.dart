@@ -1,5 +1,6 @@
 import 'adventurer.dart';
 import 'equipment_item.dart';
+import 'quest_log_entry.dart';
 
 const int maxPartySize = 4;
 const int maxStorageSlots = 5;
@@ -16,8 +17,14 @@ class PartyState {
   List<String> activePartyIds;
   // Items stored at base camp (fixed 5 slots).
   List<EquipmentItem?> storageSlots;
-  // IDs of campaign quests the party has completed.
-  List<String> completedQuestIds;
+  // Full history of completed quests.
+  List<QuestLogEntry> questLog;
+  // Metadata for the quest currently in progress (cleared on completion).
+  String? activeQuestName;
+  String? activeQuestCampaignId;
+  bool activeIsRescueMission;
+  // Adventurer IDs currently stranded from a previous quest.
+  List<String> leftBehindIds;
 
   PartyState({
     required this.name,
@@ -27,11 +34,16 @@ class PartyState {
     List<Adventurer>? adventurers,
     List<String>? activePartyIds,
     List<EquipmentItem?>? storageSlots,
-    List<String>? completedQuestIds,
+    List<QuestLogEntry>? questLog,
+    this.activeQuestName,
+    this.activeQuestCampaignId,
+    this.activeIsRescueMission = false,
+    List<String>? leftBehindIds,
   })  : adventurers = adventurers ?? [],
         activePartyIds = activePartyIds ?? [],
         storageSlots = storageSlots ?? List.filled(maxStorageSlots, null),
-        completedQuestIds = completedQuestIds ?? [];
+        questLog = questLog ?? [],
+        leftBehindIds = leftBehindIds ?? [];
 
   // Adventurers currently on the quest.
   List<Adventurer> get activeParty =>
@@ -45,7 +57,9 @@ class PartyState {
     List<Adventurer>? adventurers,
     List<String>? activePartyIds,
     List<EquipmentItem?>? storageSlots,
-    List<String>? completedQuestIds,
+    List<QuestLogEntry>? questLog,
+    bool? activeIsRescueMission,
+    List<String>? leftBehindIds,
   }) =>
       PartyState(
         name: name ?? this.name,
@@ -55,7 +69,15 @@ class PartyState {
         adventurers: adventurers ?? this.adventurers,
         activePartyIds: activePartyIds ?? this.activePartyIds,
         storageSlots: storageSlots ?? this.storageSlots,
-        completedQuestIds: completedQuestIds ?? this.completedQuestIds,
+        questLog: questLog ?? this.questLog,
+        // Nullable active-quest fields are excluded from copyWith because
+        // they need to be explicitly set to null on quest completion —
+        // use the PartyState constructor directly for that case.
+        activeQuestName: activeQuestName,
+        activeQuestCampaignId: activeQuestCampaignId,
+        activeIsRescueMission:
+            activeIsRescueMission ?? this.activeIsRescueMission,
+        leftBehindIds: leftBehindIds ?? this.leftBehindIds,
       );
 
   Map<String, dynamic> toJson() => {
@@ -66,7 +88,12 @@ class PartyState {
         'adventurers': adventurers.map((a) => a.toJson()).toList(),
         'activePartyIds': activePartyIds,
         'storageSlots': storageSlots.map((i) => i?.toJson()).toList(),
-        'completedQuestIds': completedQuestIds,
+        'questLog': questLog.map((e) => e.toJson()).toList(),
+        if (activeQuestName != null) 'activeQuestName': activeQuestName,
+        if (activeQuestCampaignId != null)
+          'activeQuestCampaignId': activeQuestCampaignId,
+        'activeIsRescueMission': activeIsRescueMission,
+        'leftBehindIds': leftBehindIds,
       };
 
   factory PartyState.fromJson(Map<String, dynamic> json) {
@@ -79,7 +106,7 @@ class PartyState {
         .map((a) => Adventurer.fromJson(a as Map<String, dynamic>))
         .toList();
 
-    // Backward compat: old saves had no activePartyIds — treat first ≤4 as active.
+    // Backward compat: old saves had no activePartyIds.
     final activeIds = (json['activePartyIds'] as List?)
             ?.map((e) => e as String)
             .toList() ??
@@ -93,7 +120,13 @@ class PartyState {
       rawStorage.add(null);
     }
 
-    final completedQuestIds = (json['completedQuestIds'] as List?)
+    final questLog = (json['questLog'] as List?)
+            ?.map((e) =>
+                QuestLogEntry.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        <QuestLogEntry>[];
+
+    final leftBehindIds = (json['leftBehindIds'] as List?)
             ?.map((e) => e as String)
             .toList() ??
         <String>[];
@@ -106,7 +139,12 @@ class PartyState {
       adventurers: adventurers,
       activePartyIds: activeIds,
       storageSlots: rawStorage.take(maxStorageSlots).toList(),
-      completedQuestIds: completedQuestIds,
+      questLog: questLog,
+      activeQuestName: json['activeQuestName'] as String?,
+      activeQuestCampaignId: json['activeQuestCampaignId'] as String?,
+      activeIsRescueMission:
+          json['activeIsRescueMission'] as bool? ?? false,
+      leftBehindIds: leftBehindIds,
     );
   }
 }

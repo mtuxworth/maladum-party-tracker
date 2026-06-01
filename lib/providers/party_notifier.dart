@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/adventurer.dart';
 import '../models/equipment_item.dart';
 import '../models/party_state.dart';
+import '../models/quest_log_entry.dart';
 
 const _boxName = 'parties';
 const _activeKey = '__active__';
@@ -97,11 +98,76 @@ class PartyNotifier extends Notifier<PartyState> {
       ..sort();
   }
 
-  // ─── Active party ────────────────────────────────────────────────────────
+  // ─── Quest lifecycle ─────────────────────────────────────────────────────
 
-  void setActiveParty(List<String> ids) {
-    state = state.copyWith(
-      activePartyIds: ids.take(maxPartySize).toList(),
+  // Records the quest selection and active party when a quest begins.
+  void startQuest({
+    required String questName,
+    String? campaignQuestId,
+    required bool isRescueMission,
+    required List<String> partyIds,
+  }) {
+    final s = state;
+    state = PartyState(
+      name: s.name,
+      guilders: s.guilders,
+      renown: s.renown,
+      notes: s.notes,
+      adventurers: s.adventurers,
+      activePartyIds: partyIds.take(maxPartySize).toList(),
+      storageSlots: s.storageSlots,
+      questLog: s.questLog,
+      activeQuestName: questName,
+      activeQuestCampaignId: campaignQuestId,
+      activeIsRescueMission: isRescueMission,
+      leftBehindIds: s.leftBehindIds,
+    );
+    _save();
+  }
+
+  // Adds a log entry and updates the stranded-adventurer list.
+  // Call this after the end-quest outcome dialogs have been shown.
+  void recordQuestComplete(Map<String, AdventurerOutcome> outcomes) {
+    final s = state;
+    final party = s.adventurers
+        .where((a) => s.activePartyIds.contains(a.id))
+        .map((a) => QuestParticipant(id: a.id, name: a.name))
+        .toList();
+
+    final entry = QuestLogEntry(
+      id: QuestLogEntry.generateId(),
+      questName: s.activeQuestName ?? 'Unknown Quest',
+      campaignQuestId: s.activeQuestCampaignId,
+      isRescueMission: s.activeIsRescueMission,
+      party: party,
+      outcomes: outcomes,
+      timestamp: DateTime.now(),
+    );
+
+    // Update stranded list: add left-behind, remove rescued/dead.
+    final leftBehindIds = List<String>.of(s.leftBehindIds);
+    for (final o in outcomes.entries) {
+      if (o.value == AdventurerOutcome.leftBehind) {
+        if (!leftBehindIds.contains(o.key)) leftBehindIds.add(o.key);
+      } else {
+        leftBehindIds.remove(o.key);
+      }
+    }
+
+    // Clear active quest metadata and write log entry.
+    state = PartyState(
+      name: s.name,
+      guilders: s.guilders,
+      renown: s.renown,
+      notes: s.notes,
+      adventurers: s.adventurers,
+      activePartyIds: s.activePartyIds,
+      storageSlots: s.storageSlots,
+      questLog: [...s.questLog, entry],
+      activeQuestName: null,
+      activeQuestCampaignId: null,
+      activeIsRescueMission: false,
+      leftBehindIds: leftBehindIds,
     );
     _save();
   }
@@ -120,19 +186,6 @@ class PartyNotifier extends Notifier<PartyState> {
 
   void setNotes(String notes) {
     state = state.copyWith(notes: notes);
-    _save();
-  }
-
-  // ─── Campaign ────────────────────────────────────────────────────────────
-
-  void toggleQuestComplete(String questId) {
-    final current = List<String>.of(state.completedQuestIds);
-    if (current.contains(questId)) {
-      current.remove(questId);
-    } else {
-      current.add(questId);
-    }
-    state = state.copyWith(completedQuestIds: current);
     _save();
   }
 
