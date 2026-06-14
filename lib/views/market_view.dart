@@ -208,12 +208,8 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
                       _searchController.clear();
                       setState(() => _search = '');
                     },
-                    onCategorySelected: (cat) => setState(
-                      () => _selectedCategory =
-                          _selectedCategory == cat ? null : cat,
-                    ),
-                    onClearCategory: () =>
-                        setState(() => _selectedCategory = null),
+                    onCategoryChanged: (cat) =>
+                        setState(() => _selectedCategory = cat),
                     onBuyTap: _handleBuyTap,
                   ),
                   _SellTab(
@@ -401,8 +397,7 @@ class _BuyTab extends StatelessWidget {
   final List<CatalogItem> filtered;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
-  final ValueChanged<String> onCategorySelected;
-  final VoidCallback onClearCategory;
+  final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<CatalogItem> onBuyTap;
 
   const _BuyTab({
@@ -413,8 +408,7 @@ class _BuyTab extends StatelessWidget {
     required this.filtered,
     required this.onSearchChanged,
     required this.onSearchCleared,
-    required this.onCategorySelected,
-    required this.onClearCategory,
+    required this.onCategoryChanged,
     required this.onBuyTap,
   });
 
@@ -424,48 +418,57 @@ class _BuyTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-          child: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: 'Search…',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: search.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: onSearchCleared,
-                    )
-                  : null,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            onChanged: onSearchChanged,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 4,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          child: Row(
             children: [
-              FilterChip(
-                label: const Text('All'),
-                selected: selectedCategory == null,
-                onSelected: (_) => onClearCategory(),
-                visualDensity: VisualDensity.compact,
-              ),
-              ...kEquipmentCategories.map(
-                (cat) => FilterChip(
-                  label: Text(cat),
-                  selected: selectedCategory == cat,
-                  onSelected: (_) => onCategorySelected(cat),
-                  visualDensity: VisualDensity.compact,
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search…',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: search.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: onSearchCleared,
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onChanged: onSearchChanged,
                 ),
+              ),
+              const SizedBox(width: 10),
+              DropdownButtonFormField<String?>(
+                initialValue: selectedCategory,
+                isExpanded: false,
+                isDense: true,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                ),
+                hint: const Text('Category'),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('All'),
+                  ),
+                  ...kEquipmentCategories.map(
+                    (cat) => DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat),
+                    ),
+                  ),
+                ],
+                onChanged: onCategoryChanged,
               ),
             ],
           ),
         ),
-        const SizedBox(height: 4),
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
