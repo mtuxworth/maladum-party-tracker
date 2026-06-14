@@ -156,29 +156,8 @@ class _CatalogView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              DropdownButtonFormField<String?>(
-                initialValue: selectedCategory,
-                isExpanded: false,
-                isDense: true,
-                decoration: const InputDecoration(
-                  isDense: true,
-                  border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                ),
-                hint: const Text('Category'),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('All'),
-                  ),
-                  ...kEquipmentCategories.map(
-                    (cat) => DropdownMenuItem(
-                      value: cat,
-                      child: Text(cat),
-                    ),
-                  ),
-                ],
+              _CategoryDropdown(
+                value: selectedCategory,
                 onChanged: onCategoryChanged,
               ),
             ],
@@ -604,4 +583,37 @@ String _generateId() {
   final rand = Random();
   return List.generate(8, (_) => rand.nextInt(16).toRadixString(16))
       .join();
+}
+
+// ─── Category dropdown ────────────────────────────────────────────────────────
+
+class _CategoryDropdown extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  const _CategoryDropdown({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButton<String?>(
+        value: value,
+        isDense: true,
+        underline: const SizedBox(),
+        hint: const Text('Category', style: TextStyle(fontSize: 14)),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          ...kEquipmentCategories.map(
+            (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+          ),
+        ],
+        onChanged: onChanged,
+      ),
+    );
+  }
 }
