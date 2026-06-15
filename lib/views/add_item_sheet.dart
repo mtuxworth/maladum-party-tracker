@@ -237,6 +237,20 @@ class _CatalogTile extends StatelessWidget {
 
   const _CatalogTile({required this.item, required this.onTap});
 
+  static const _rarityLabel = {
+    Rarity.common: 'Common',
+    Rarity.uncommon: 'Uncommon',
+    Rarity.rare: 'Rare',
+    Rarity.exclusive: 'Exclusive',
+  };
+
+  static const _rarityColor = {
+    Rarity.common: Color(0xFF9E9E9E),
+    Rarity.uncommon: Color(0xFF66BB6A),
+    Rarity.rare: Color(0xFF42A5F5),
+    Rarity.exclusive: Color(0xFFAB47BC),
+  };
+
   @override
   Widget build(BuildContext context) {
     final borderColor = kItemBorderColors[item.color]!;
@@ -256,11 +270,10 @@ class _CatalogTile extends StatelessWidget {
             child: Text(item.name, style: const TextStyle(fontSize: 14)),
           ),
           Text(
-            item.rank > 0 ? 'R${item.rank}' : 'Excl',
+            _rarityLabel[item.rarity]!,
             style: TextStyle(
               fontSize: 11,
-              color:
-                  item.rank > 0 ? Colors.grey : const Color(0xFF6A1B9A),
+              color: _rarityColor[item.rarity],
             ),
           ),
         ],
