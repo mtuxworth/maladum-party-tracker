@@ -148,6 +148,11 @@ void showItemDetailSheet(
                                 label: 'Innate',
                                 color: const Color(0xFF6A1B9A),
                               ),
+                            if (item.isStartingItem)
+                              const _InfoChip(
+                                label: 'Starting',
+                                color: Color(0xFFFFB300),
+                              ),
                           ],
                         ),
                       ],
@@ -235,6 +240,28 @@ void showItemDetailSheet(
               ),
               const Divider(height: 1),
             ],
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                item.isStartingItem ? Icons.star : Icons.star_border,
+                color: item.isStartingItem
+                    ? const Color(0xFFFFB300)
+                    : null,
+              ),
+              title: Text(
+                item.isStartingItem
+                    ? 'Unmark as starting item'
+                    : 'Mark as starting item',
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                notifier.toggleStartingItem(
+                  slotIndex,
+                  fromGear: fromGear,
+                );
+              },
+            ),
+            const Divider(height: 1),
             if (!item.isInnate)
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -326,6 +353,12 @@ class ItemTile extends ConsumerWidget {
                 bottom: 4,
                 left: 4,
                 child: Icon(Icons.lock, size: 12, color: Colors.white70),
+              ),
+            if (item.isStartingItem)
+              const Positioned(
+                bottom: 4,
+                right: 4,
+                child: Icon(Icons.star, size: 12, color: Color(0xFFFFB300)),
               ),
           ],
         ),

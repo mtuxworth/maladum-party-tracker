@@ -296,6 +296,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
   Rarity _rarity = Rarity.common;
   int _slots = 1;
   bool _isInnate = false;
+  bool _isStartingItem = false;
 
   // 0 = no combat stat; 1–5 = Combat N
   int _combatDice = 0;
@@ -418,6 +419,13 @@ class _CustomItemFormState extends State<_CustomItemForm> {
                   onChanged: (v) => setState(() => _isInnate = v),
                   contentPadding: EdgeInsets.zero,
                 ),
+              SwitchListTile(
+                title: const Text('Starting item'),
+                subtitle: const Text('Owned at the start of the campaign'),
+                value: _isStartingItem,
+                onChanged: (v) => setState(() => _isStartingItem = v),
+                contentPadding: EdgeInsets.zero,
+              ),
               const SizedBox(height: 16),
               const Divider(height: 1),
               const SizedBox(height: 12),
@@ -566,6 +574,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
         rarity: _rarity,
         slots: _slots,
         isInnate: _isInnate,
+        isStartingItem: _isStartingItem,
         description: _builtDescription,
       ),
     );

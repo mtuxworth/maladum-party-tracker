@@ -16,6 +16,9 @@ class EquipmentItem {
   // Soft-locked in a gear slot; only armour (yellow) may overwrite it.
   final bool isInnate;
 
+  // Marks an item as part of the adventurer's starting equipment.
+  final bool isStartingItem;
+
   // ID of the originating CatalogItem, null for custom items.
   final String? catalogId;
 
@@ -34,11 +37,30 @@ class EquipmentItem {
     required this.rarity,
     required this.slots,
     this.isInnate = false,
+    this.isStartingItem = false,
     this.catalogId,
     this.description = '',
     this.buyPrice,
     this.sellPrice,
   });
+
+  EquipmentItem copyWith({
+    bool? isInnate,
+    bool? isStartingItem,
+  }) =>
+      EquipmentItem(
+        id: id,
+        name: name,
+        color: color,
+        rarity: rarity,
+        slots: slots,
+        isInnate: isInnate ?? this.isInnate,
+        isStartingItem: isStartingItem ?? this.isStartingItem,
+        catalogId: catalogId,
+        description: description,
+        buyPrice: buyPrice,
+        sellPrice: sellPrice,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -47,6 +69,7 @@ class EquipmentItem {
         'rarity': rarity.name,
         'slots': slots,
         'isInnate': isInnate,
+        if (isStartingItem) 'isStartingItem': isStartingItem,
         if (catalogId != null) 'catalogId': catalogId,
         if (description.isNotEmpty) 'description': description,
         if (buyPrice != null) 'buyPrice': buyPrice,
@@ -60,6 +83,7 @@ class EquipmentItem {
         rarity: Rarity.values.byName(json['rarity'] as String),
         slots: json['slots'] as int,
         isInnate: json['isInnate'] as bool? ?? false,
+        isStartingItem: json['isStartingItem'] as bool? ?? false,
         catalogId: json['catalogId'] as String?,
         description: json['description'] as String? ?? '',
         buyPrice: json['buyPrice'] as String?,

@@ -162,6 +162,26 @@ class AdventurerNotifier
 
   // ─── Inventory ───────────────────────────────────────────────────────────
 
+  // Toggles the isStartingItem flag, updating every slot that holds the item.
+  void toggleStartingItem(int slotIndex, {required bool fromGear}) {
+    if (fromGear) {
+      final item = state.gearSlots[slotIndex];
+      if (item == null) return;
+      final updated = item.copyWith(isStartingItem: !item.isStartingItem);
+      for (int i = 0; i < maxGearSlots; i++) {
+        if (state.gearSlots[i]?.id == item.id) state.gearSlots[i] = updated;
+      }
+    } else {
+      final item = state.packSlots[slotIndex];
+      if (item == null) return;
+      final updated = item.copyWith(isStartingItem: !item.isStartingItem);
+      for (int i = 0; i < maxPackSlots; i++) {
+        if (state.packSlots[i]?.id == item.id) state.packSlots[i] = updated;
+      }
+    }
+    _emit();
+  }
+
   // Clears all gear indices occupied by the item at [index].
   void _clearGearItem(int index) {
     final existing = state.gearSlots[index];
