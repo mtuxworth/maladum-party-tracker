@@ -19,6 +19,9 @@ class EquipmentItem {
   // Marks an item as part of the adventurer's starting equipment.
   final bool isStartingItem;
 
+  // Which product set this item belongs to.
+  final ItemSet itemSet;
+
   // ID of the originating CatalogItem, null for custom items.
   final String? catalogId;
 
@@ -38,6 +41,7 @@ class EquipmentItem {
     required this.slots,
     this.isInnate = false,
     this.isStartingItem = false,
+    this.itemSet = ItemSet.base,
     this.catalogId,
     this.description = '',
     this.buyPrice,
@@ -47,6 +51,7 @@ class EquipmentItem {
   EquipmentItem copyWith({
     bool? isInnate,
     bool? isStartingItem,
+    ItemSet? itemSet,
   }) =>
       EquipmentItem(
         id: id,
@@ -56,6 +61,7 @@ class EquipmentItem {
         slots: slots,
         isInnate: isInnate ?? this.isInnate,
         isStartingItem: isStartingItem ?? this.isStartingItem,
+        itemSet: itemSet ?? this.itemSet,
         catalogId: catalogId,
         description: description,
         buyPrice: buyPrice,
@@ -70,6 +76,7 @@ class EquipmentItem {
         'slots': slots,
         'isInnate': isInnate,
         if (isStartingItem) 'isStartingItem': isStartingItem,
+        'itemSet': itemSet.name,
         if (catalogId != null) 'catalogId': catalogId,
         if (description.isNotEmpty) 'description': description,
         if (buyPrice != null) 'buyPrice': buyPrice,
@@ -84,6 +91,9 @@ class EquipmentItem {
         slots: json['slots'] as int,
         isInnate: json['isInnate'] as bool? ?? false,
         isStartingItem: json['isStartingItem'] as bool? ?? false,
+        itemSet: ItemSet.values.byName(
+          json['itemSet'] as String? ?? 'base',
+        ),
         catalogId: json['catalogId'] as String?,
         description: json['description'] as String? ?? '',
         buyPrice: json['buyPrice'] as String?,

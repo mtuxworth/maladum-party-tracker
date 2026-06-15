@@ -32,6 +32,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
   String _search = '';
   String? _selectedCategory;
   Rarity? _selectedRarity;
+  ItemSet? _selectedSet;
   bool _showCustomForm = false;
 
   @override
@@ -47,6 +48,9 @@ class _AddItemSheetState extends State<_AddItemSheet> {
         return false;
       }
       if (_selectedRarity != null && item.rarity != _selectedRarity) {
+        return false;
+      }
+      if (_selectedSet != null && item.itemSet != _selectedSet) {
         return false;
       }
       if (q.isNotEmpty &&
@@ -84,6 +88,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                 search: _search,
                 selectedCategory: _selectedCategory,
                 selectedRarity: _selectedRarity,
+                selectedSet: _selectedSet,
                 filtered: _filtered,
                 onSearchChanged: (v) => setState(() => _search = v),
                 onSearchCleared: () {
@@ -94,6 +99,8 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                     setState(() => _selectedCategory = cat),
                 onRarityChanged: (r) =>
                     setState(() => _selectedRarity = r),
+                onSetChanged: (s) =>
+                    setState(() => _selectedSet = s),
                 onShowCustom: () =>
                     setState(() => _showCustomForm = true),
               ),
@@ -110,11 +117,13 @@ class _CatalogView extends StatelessWidget {
   final String search;
   final String? selectedCategory;
   final Rarity? selectedRarity;
+  final ItemSet? selectedSet;
   final List<CatalogItem> filtered;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<Rarity?> onRarityChanged;
+  final ValueChanged<ItemSet?> onSetChanged;
   final VoidCallback onShowCustom;
 
   const _CatalogView({
@@ -123,11 +132,13 @@ class _CatalogView extends StatelessWidget {
     required this.search,
     required this.selectedCategory,
     required this.selectedRarity,
+    required this.selectedSet,
     required this.filtered,
     required this.onSearchChanged,
     required this.onSearchCleared,
     required this.onCategoryChanged,
     required this.onRarityChanged,
+    required this.onSetChanged,
     required this.onShowCustom,
   });
 
@@ -185,6 +196,16 @@ class _CatalogView extends StatelessWidget {
                   child: _RarityDropdown(
                     value: selectedRarity,
                     onChanged: onRarityChanged,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterColumn(
+                  label: 'Item Set',
+                  child: _SetDropdown(
+                    value: selectedSet,
+                    onChanged: onSetChanged,
                   ),
                 ),
               ),
@@ -310,6 +331,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
   int _slots = 1;
   bool _isInnate = false;
   bool _isStartingItem = false;
+  ItemSet _itemSet = ItemSet.base;
 
   // 0 = no combat stat; 1–5 = Combat N
   int _combatDice = 0;
@@ -438,6 +460,22 @@ class _CustomItemFormState extends State<_CustomItemForm> {
                 value: _isStartingItem,
                 onChanged: (v) => setState(() => _isStartingItem = v),
                 contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              InputDecorator(
+                decoration: const InputDecoration(labelText: 'Item Set'),
+                child: DropdownButton<ItemSet>(
+                  value: _itemSet,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  items: ItemSet.values
+                      .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(kItemSetShortName[s]!),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _itemSet = v!),
+                ),
               ),
               const SizedBox(height: 16),
               const Divider(height: 1),
@@ -588,6 +626,7 @@ class _CustomItemFormState extends State<_CustomItemForm> {
         slots: _slots,
         isInnate: _isInnate,
         isStartingItem: _isStartingItem,
+        itemSet: _itemSet,
         description: _builtDescription,
       ),
     );
@@ -732,6 +771,42 @@ class _RarityDropdown extends StatelessWidget {
             (r) => DropdownMenuItem(
               value: r,
               child: Text(_labels[r]!),
+            ),
+          ),
+        ],
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _SetDropdown extends StatelessWidget {
+  final ItemSet? value;
+  final ValueChanged<ItemSet?> onChanged;
+
+  const _SetDropdown({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButton<ItemSet?>(
+        value: value,
+        isDense: true,
+        isExpanded: true,
+        underline: const SizedBox(),
+        hint: const Text('All', style: TextStyle(fontSize: 12)),
+        style: const TextStyle(fontSize: 12, color: Color(0xFFF5F5F5)),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          ...ItemSet.values.map(
+            (s) => DropdownMenuItem(
+              value: s,
+              child: Text(kItemSetShortName[s]!),
             ),
           ),
         ],

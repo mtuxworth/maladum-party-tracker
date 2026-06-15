@@ -153,6 +153,10 @@ void showItemDetailSheet(
                                 label: 'Starting',
                                 color: Color(0xFFFFB300),
                               ),
+                            _InfoChip(
+                              label: kItemSetShortName[item.itemSet]!,
+                              color: Colors.white38,
+                            ),
                           ],
                         ),
                       ],

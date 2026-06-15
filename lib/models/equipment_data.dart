@@ -15,6 +15,8 @@ class CatalogItem {
   // Guilder prices; null means no price listed, 'X' means variable/special.
   final String? buyPrice;
   final String? sellPrice;
+  // Which product set this item belongs to; defaults to the base game.
+  final ItemSet itemSet;
 
   const CatalogItem({
     required this.id,
@@ -27,6 +29,7 @@ class CatalogItem {
     this.slots = 1,
     this.buyPrice,
     this.sellPrice,
+    this.itemSet = ItemSet.base,
   });
 
   EquipmentItem toEquipmentItem() {
@@ -44,6 +47,7 @@ class CatalogItem {
       description: description,
       buyPrice: buyPrice,
       sellPrice: sellPrice,
+      itemSet: itemSet,
     );
   }
 }

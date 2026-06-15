@@ -116,6 +116,7 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
   String _search = '';
   String? _selectedCategory;
   Rarity? _selectedRarity;
+  ItemSet? _selectedSet;
 
   @override
   void initState() {
@@ -137,6 +138,9 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
         return false;
       }
       if (_selectedRarity != null && item.rarity != _selectedRarity) {
+        return false;
+      }
+      if (_selectedSet != null && item.itemSet != _selectedSet) {
         return false;
       }
       if (q.isNotEmpty &&
@@ -208,6 +212,7 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
                     search: _search,
                     selectedCategory: _selectedCategory,
                     selectedRarity: _selectedRarity,
+                    selectedSet: _selectedSet,
                     filtered: _filtered,
                     onSearchChanged: (v) => setState(() => _search = v),
                     onSearchCleared: () {
@@ -218,6 +223,8 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
                         setState(() => _selectedCategory = cat),
                     onRarityChanged: (r) =>
                         setState(() => _selectedRarity = r),
+                    onSetChanged: (s) =>
+                        setState(() => _selectedSet = s),
                     onBuyTap: _handleBuyTap,
                   ),
                   _SellTab(
@@ -403,11 +410,13 @@ class _BuyTab extends StatelessWidget {
   final String search;
   final String? selectedCategory;
   final Rarity? selectedRarity;
+  final ItemSet? selectedSet;
   final List<CatalogItem> filtered;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<Rarity?> onRarityChanged;
+  final ValueChanged<ItemSet?> onSetChanged;
   final ValueChanged<CatalogItem> onBuyTap;
 
   const _BuyTab({
@@ -416,11 +425,13 @@ class _BuyTab extends StatelessWidget {
     required this.search,
     required this.selectedCategory,
     required this.selectedRarity,
+    required this.selectedSet,
     required this.filtered,
     required this.onSearchChanged,
     required this.onSearchCleared,
     required this.onCategoryChanged,
     required this.onRarityChanged,
+    required this.onSetChanged,
     required this.onBuyTap,
   });
 
@@ -468,6 +479,16 @@ class _BuyTab extends StatelessWidget {
                   child: _RarityDropdown(
                     value: selectedRarity,
                     onChanged: onRarityChanged,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterColumn(
+                  label: 'Item Set',
+                  child: _SetDropdown(
+                    value: selectedSet,
+                    onChanged: onSetChanged,
                   ),
                 ),
               ),
@@ -894,6 +915,42 @@ class _RarityDropdown extends StatelessWidget {
           const DropdownMenuItem(value: null, child: Text('All')),
           ...Rarity.values.map(
             (r) => DropdownMenuItem(value: r, child: Text(_labels[r]!)),
+          ),
+        ],
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _SetDropdown extends StatelessWidget {
+  final ItemSet? value;
+  final ValueChanged<ItemSet?> onChanged;
+
+  const _SetDropdown({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButton<ItemSet?>(
+        value: value,
+        isDense: true,
+        isExpanded: true,
+        underline: const SizedBox(),
+        hint: const Text('All', style: TextStyle(fontSize: 12)),
+        style: const TextStyle(fontSize: 12, color: Color(0xFFF5F5F5)),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          ...ItemSet.values.map(
+            (s) => DropdownMenuItem(
+              value: s,
+              child: Text(kItemSetShortName[s]!),
+            ),
           ),
         ],
         onChanged: onChanged,
