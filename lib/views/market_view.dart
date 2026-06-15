@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/enums.dart';
 import '../models/equipment_data.dart';
 import '../models/equipment_item.dart';
 import '../models/party_state.dart';
@@ -114,6 +115,7 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
   final _searchController = TextEditingController();
   String _search = '';
   String? _selectedCategory;
+  Rarity? _selectedRarity;
 
   @override
   void initState() {
@@ -132,6 +134,9 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
     final q = _search.toLowerCase();
     return kEquipmentCatalog.where((item) {
       if (_selectedCategory != null && item.category != _selectedCategory) {
+        return false;
+      }
+      if (_selectedRarity != null && item.rarity != _selectedRarity) {
         return false;
       }
       if (q.isNotEmpty &&
@@ -202,6 +207,7 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
                     searchController: _searchController,
                     search: _search,
                     selectedCategory: _selectedCategory,
+                    selectedRarity: _selectedRarity,
                     filtered: _filtered,
                     onSearchChanged: (v) => setState(() => _search = v),
                     onSearchCleared: () {
@@ -210,6 +216,8 @@ class _MarketDialogState extends ConsumerState<_MarketDialog>
                     },
                     onCategoryChanged: (cat) =>
                         setState(() => _selectedCategory = cat),
+                    onRarityChanged: (r) =>
+                        setState(() => _selectedRarity = r),
                     onBuyTap: _handleBuyTap,
                   ),
                   _SellTab(
@@ -394,10 +402,12 @@ class _BuyTab extends StatelessWidget {
   final TextEditingController searchController;
   final String search;
   final String? selectedCategory;
+  final Rarity? selectedRarity;
   final List<CatalogItem> filtered;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
   final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<Rarity?> onRarityChanged;
   final ValueChanged<CatalogItem> onBuyTap;
 
   const _BuyTab({
@@ -405,10 +415,12 @@ class _BuyTab extends StatelessWidget {
     required this.searchController,
     required this.search,
     required this.selectedCategory,
+    required this.selectedRarity,
     required this.filtered,
     required this.onSearchChanged,
     required this.onSearchCleared,
     required this.onCategoryChanged,
+    required this.onRarityChanged,
     required this.onBuyTap,
   });
 
@@ -418,32 +430,46 @@ class _BuyTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              hintText: 'Search…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: search.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: onSearchCleared,
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: onSearchChanged,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search…',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: search.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: onSearchCleared,
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
+                child: _FilterColumn(
+                  label: 'Item Type',
+                  child: _CategoryDropdown(
+                    value: selectedCategory,
+                    onChanged: onCategoryChanged,
                   ),
-                  onChanged: onSearchChanged,
                 ),
               ),
-              const SizedBox(width: 10),
-              _CategoryDropdown(
-                value: selectedCategory,
-                onChanged: onCategoryChanged,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterColumn(
+                  label: 'Item Rarity',
+                  child: _RarityDropdown(
+                    value: selectedRarity,
+                    onChanged: onRarityChanged,
+                  ),
+                ),
               ),
             ],
           ),
@@ -763,6 +789,32 @@ class _SellEntryTile extends StatelessWidget {
 
 // ── Shared sub-widgets ────────────────────────────────────────────────────────
 
+class _FilterColumn extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _FilterColumn({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFE65100),
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 3),
+        child,
+      ],
+    );
+  }
+}
+
 class _CategoryDropdown extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
@@ -772,7 +824,7 @@ class _CategoryDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.white24),
         borderRadius: BorderRadius.circular(4),
@@ -780,12 +832,54 @@ class _CategoryDropdown extends StatelessWidget {
       child: DropdownButton<String?>(
         value: value,
         isDense: true,
+        isExpanded: true,
         underline: const SizedBox(),
-        hint: const Text('Category', style: TextStyle(fontSize: 14)),
+        hint: const Text('All', style: TextStyle(fontSize: 12)),
+        style: const TextStyle(fontSize: 12, color: Color(0xFFF5F5F5)),
         items: [
           const DropdownMenuItem(value: null, child: Text('All')),
           ...kEquipmentCategories.map(
             (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+          ),
+        ],
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _RarityDropdown extends StatelessWidget {
+  final Rarity? value;
+  final ValueChanged<Rarity?> onChanged;
+
+  const _RarityDropdown({required this.value, required this.onChanged});
+
+  static const _labels = {
+    Rarity.common: 'Common',
+    Rarity.uncommon: 'Uncommon',
+    Rarity.rare: 'Rare',
+    Rarity.exclusive: 'Exclusive',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white24),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButton<Rarity?>(
+        value: value,
+        isDense: true,
+        isExpanded: true,
+        underline: const SizedBox(),
+        hint: const Text('All', style: TextStyle(fontSize: 12)),
+        style: const TextStyle(fontSize: 12, color: Color(0xFFF5F5F5)),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          ...Rarity.values.map(
+            (r) => DropdownMenuItem(value: r, child: Text(_labels[r]!)),
           ),
         ],
         onChanged: onChanged,
