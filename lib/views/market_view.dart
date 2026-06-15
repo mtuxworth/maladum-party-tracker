@@ -949,7 +949,16 @@ class _SetDropdown extends StatelessWidget {
           ...ItemSet.values.map(
             (s) => DropdownMenuItem(
               value: s,
-              child: Text(kItemSetName[s]!),
+              enabled: s == ItemSet.base,
+              child: Text(
+                kItemSetName[s]!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: s == ItemSet.base
+                      ? const Color(0xFFF5F5F5)
+                      : Colors.white24,
+                ),
+              ),
             ),
           ),
         ],
