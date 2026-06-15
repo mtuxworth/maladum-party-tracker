@@ -806,7 +806,7 @@ class _SetDropdown extends StatelessWidget {
           ...ItemSet.values.map(
             (s) => DropdownMenuItem(
               value: s,
-              child: Text(kItemSetShortName[s]!),
+              child: Text(kItemSetName[s]!),
             ),
           ),
         ],
