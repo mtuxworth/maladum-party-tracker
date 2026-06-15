@@ -245,10 +245,10 @@ class _CatalogTile extends StatelessWidget {
   };
 
   static const _rarityColor = {
-    Rarity.common: Color(0xFF9E9E9E),
-    Rarity.uncommon: Color(0xFF66BB6A),
+    Rarity.common: Color(0xFF66BB6A),
+    Rarity.uncommon: Color(0xFFFFB300),
     Rarity.rare: Color(0xFF42A5F5),
-    Rarity.exclusive: Color(0xFFAB47BC),
+    Rarity.exclusive: Color(0xFF9E9E9E),
   };
 
   @override
