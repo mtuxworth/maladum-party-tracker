@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/enums.dart';
+import 'asset_icon.dart';
 
 // Maps each status effect to its game icon asset path.
 const Map<StatusEffect, String> kStatusImages = {
@@ -60,9 +61,9 @@ class StatusSlot extends StatelessWidget {
         child: effect != null
             ? Padding(
                 padding: const EdgeInsets.all(8),
-                child: Image.asset(
-                  kStatusImages[effect!]!,
-                  filterQuality: FilterQuality.medium,
+                child: AssetIcon(
+                  path: kStatusImages[effect!]!,
+                  label: _statusLabel(effect!),
                 ),
               )
             : Icon(
@@ -129,11 +130,10 @@ class _StatusPicker extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Image.asset(
-                            kStatusImages[e]!,
-                            width: 28,
-                            height: 28,
-                            filterQuality: FilterQuality.medium,
+                          AssetIcon(
+                            path: kStatusImages[e]!,
+                            label: _statusLabel(e),
+                            size: 28,
                           ),
                           const SizedBox(width: 14),
                           Expanded(

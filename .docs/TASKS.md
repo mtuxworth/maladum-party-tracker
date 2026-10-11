@@ -109,9 +109,17 @@ Status legend: `[ ]` To Do · `[~]` In Progress · `[x]` Done
 
 ## Phase 9 — Polish & PWA
 
-- [ ] 9.1 Add fallback color-coded text tiles when item/skill image assets are missing
+- [x] 9.1 Add fallback color-coded text tiles when item/skill image assets are missing
 - [ ] 9.2 Configure Flutter Web PWA manifest (name, icons, theme color)
-- [ ] 9.3 Test responsive layout at key breakpoints (360px, 600px, 1024px, 1440px)
-- [ ] 9.4 Test JSON round-trip (export → import → verify state matches)
-- [ ] 9.5 Test offline functionality (PWA cache, Hive persistence across reloads)
-- [ ] 9.6 Configure deployment (GitHub Pages / Firebase Hosting / Vercel)
+  - [x] Name, description, theme/background colours
+  - [ ] Replace default Flutter icons (192, 512, maskable)
+- [x] 9.3 Test responsive layout at key breakpoints (360px, 600px, 1024px, 1440px)
+  - Fixed: AP/status row clipped at 360px
+- [x] 9.4 Test JSON round-trip (export → import → verify state matches)
+  - Fixed: adventurer providers kept stale state after import and wrote it back
+- [x] 9.5 Test offline functionality (PWA cache, Hive persistence across reloads)
+  - [x] App loads from service worker with server down; Hive data persists
+  - [x] CanvasKit bundled locally (`--no-web-resources-cdn`)
+  - [x] Roboto + Noto Sans Symbols bundled in `assets/fonts/`
+- [x] 9.6 Configure deployment (GitHub Pages / Firebase Hosting / Vercel)
+  - GitHub Actions → gh-pages: https://mtuxworth.github.io/maladum-party-tracker/

@@ -22,7 +22,8 @@ jobs:
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --base-href /maladum-party-tracker/
+        # Bundle CanvasKit locally so the service worker can cache it offline.
+        run: flutter build web --release --no-web-resources-cdn --base-href /maladum-party-tracker/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

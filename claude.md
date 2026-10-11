@@ -13,7 +13,21 @@ Flutter Web PWA for tracking party state in the Maladum board game. Offline-firs
 
 - [x] Phase 1 — Project setup, dependencies, theme, Hive init
 - [x] Phase 2 — Data models and unit tests
-- [ ] Phase 3 — State management (next)
+- [x] Phase 3 — State management
+- [x] Phase 4 — App shell & navigation
+- [x] Phase 5 — Adventurer dashboard
+- [x] Phase 6 — Inventory system
+- [x] Phase 7 — Rest & recovery
+- [x] Phase 8 — XP & rank-up flow
+- [ ] Phase 9 — Polish & PWA (in progress)
+
+Post-plan features shipped: Quest Log, first-run New Team dialog, catalog
+filters (category, rarity, item set), starting-item flag, item set tracking.
+
+Deploy: `.github/workflows/deploy.yml` builds and publishes to GitHub Pages
+on every push to `main` — https://mtuxworth.github.io/maladum-party-tracker/
+(repo: `mtuxworth/maladum-party-tracker`). Past "Build: web release" commits
+under `build/web/` are not what gets deployed.
 
 ---
 

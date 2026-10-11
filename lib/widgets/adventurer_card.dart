@@ -42,10 +42,21 @@ class AdventurerCard extends ConsumerWidget {
             IntrinsicHeight(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                // Scale down rather than clip on narrow (360px) phones.
                 children: [
-                  ActionPointTracker(adventurerId: adventurerId),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: ActionPointTracker(adventurerId: adventurerId),
+                    ),
+                  ),
                   const VerticalDivider(),
-                  StatusTray(adventurerId: adventurerId),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: StatusTray(adventurerId: adventurerId),
+                    ),
+                  ),
                 ],
               ),
             ),

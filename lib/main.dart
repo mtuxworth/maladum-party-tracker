@@ -53,12 +53,18 @@ class MaladumTrackerApp extends StatelessWidget {
       ),
       // Merge into the dark base textTheme so every unlisted style keeps its
       // default light colour instead of falling back to black.
-      textTheme: base.textTheme.copyWith(
-        bodyLarge: base.textTheme.bodyLarge?.copyWith(color: textPrimary),
-        bodyMedium: base.textTheme.bodyMedium?.copyWith(color: textPrimary),
-        bodySmall: base.textTheme.bodySmall?.copyWith(color: textSecondary),
-        labelSmall: base.textTheme.labelSmall?.copyWith(color: textSecondary),
-      ),
+      // Bundled fallback so symbol glyphs don't require a CDN fetch offline.
+      textTheme: base.textTheme
+          .copyWith(
+            bodyLarge: base.textTheme.bodyLarge?.copyWith(color: textPrimary),
+            bodyMedium:
+                base.textTheme.bodyMedium?.copyWith(color: textPrimary),
+            bodySmall:
+                base.textTheme.bodySmall?.copyWith(color: textSecondary),
+            labelSmall:
+                base.textTheme.labelSmall?.copyWith(color: textSecondary),
+          )
+          .apply(fontFamilyFallback: const ['NotoSansSymbols']),
       cardTheme: const CardThemeData(color: cardBg),
       listTileTheme: const ListTileThemeData(
         textColor: textPrimary,

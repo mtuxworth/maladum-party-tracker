@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/game_keyword.dart';
+import 'asset_icon.dart';
 
 // Renders a string containing [Keyword] patterns as rich text.
 // Known keywords become inline coloured chips with an icon.
@@ -85,11 +86,10 @@ class _KeywordChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(
-            keyword.imagePath,
-            width: 20,
-            height: 20,
-            filterQuality: FilterQuality.medium,
+          AssetIcon(
+            path: keyword.imagePath,
+            label: keyword.keyword,
+            size: 20,
           ),
           const SizedBox(width: 3),
           Text(

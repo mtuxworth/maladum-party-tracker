@@ -8,12 +8,18 @@ import 'providers.dart';
 
 class AdventurerNotifier
     extends AutoDisposeFamilyNotifier<Adventurer, String> {
+  Adventurer? _last;
+
   @override
   Adventurer build(String arg) {
-    return ref
-        .read(partyProvider)
-        .adventurers
-        .firstWhere((a) => a.id == arg);
+    // Watched so party-wide replacements (import, team switch) aren't lost.
+    final current = ref.watch(
+      partyProvider.select(
+        (p) => p.adventurers.where((a) => a.id == arg).firstOrNull,
+      ),
+    );
+    // Removed adventurers keep their last state until this provider disposes.
+    return _last = current ?? _last!;
   }
 
   // ─── Internals ───────────────────────────────────────────────────────────

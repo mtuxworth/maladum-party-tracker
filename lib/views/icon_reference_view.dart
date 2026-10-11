@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/game_keyword.dart';
+import '../widgets/asset_icon.dart';
 
 class IconReferenceView extends StatelessWidget {
   const IconReferenceView({super.key});
@@ -88,9 +89,9 @@ class _KeywordRow extends StatelessWidget {
               border: Border.all(color: const Color(0xFF444444)),
             ),
             padding: const EdgeInsets.all(4),
-            child: Image.asset(
-              keyword.imagePath,
-              filterQuality: FilterQuality.medium,
+            child: AssetIcon(
+              path: keyword.imagePath,
+              label: keyword.keyword,
             ),
           ),
           const SizedBox(width: 12),
