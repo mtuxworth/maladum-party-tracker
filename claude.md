@@ -19,7 +19,7 @@ Flutter Web PWA for tracking party state in the Maladum board game. Offline-firs
 - [x] Phase 6 — Inventory system
 - [x] Phase 7 — Rest & recovery
 - [x] Phase 8 — XP & rank-up flow
-- [ ] Phase 9 — Polish & PWA (in progress)
+- [x] Phase 9 — Polish & PWA
 
 Post-plan features shipped: Quest Log, first-run New Team dialog, catalog
 filters (category, rarity, item set), starting-item flag, item set tracking.

@@ -110,9 +110,9 @@ Status legend: `[ ]` To Do · `[~]` In Progress · `[x]` Done
 ## Phase 9 — Polish & PWA
 
 - [x] 9.1 Add fallback color-coded text tiles when item/skill image assets are missing
-- [ ] 9.2 Configure Flutter Web PWA manifest (name, icons, theme color)
+- [x] 9.2 Configure Flutter Web PWA manifest (name, icons, theme color)
   - [x] Name, description, theme/background colours
-  - [ ] Replace default Flutter icons (192, 512, maskable)
+  - [x] Shield icons (192, 512, maskable, favicon)
 - [x] 9.3 Test responsive layout at key breakpoints (360px, 600px, 1024px, 1440px)
   - Fixed: AP/status row clipped at 360px
 - [x] 9.4 Test JSON round-trip (export → import → verify state matches)
